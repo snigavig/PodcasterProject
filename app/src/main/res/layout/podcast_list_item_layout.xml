@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cv_wrap"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <android.support.v7.widget.AppCompatImageView
+        android:id="@+id/podcastImageView"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:padding="5dp"
+        app:srcCompat="@color/colorPrimaryHalfTransparent" />
+
+    <android.support.v7.widget.AppCompatTextView
+        android:id="@+id/tv_title"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/podcastImageView"
+        android:layout_toLeftOf="@+id/downloadButton"
+        android:layout_toRightOf="@id/podcastImageView"
+        android:layout_toStartOf="@+id/downloadButton"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:lines="3"
+        android:maxLines="3"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:textColor="@color/textColor" />
+
+    <android.support.v7.widget.AppCompatImageButton
+        android:id="@id/downloadButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_margin="5dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_archive_black_24dp" />
+</RelativeLayout>
