@@ -1,4 +1,4 @@
-package com.goodcodeforfun.podcasterproject;
+package com.goodcodeforfun.podcasterproject.model;
 
 import java.util.Date;
 

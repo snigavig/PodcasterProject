@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -19,6 +20,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,9 +30,16 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
+import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.stateui.StateUIActivity;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+
+import java.util.ArrayList;
+
+import io.realm.Realm;
+import io.realm.RealmChangeListener;
+import io.realm.RealmResults;
 
 public class MainActivity extends StateUIActivity {
 
@@ -39,9 +48,9 @@ public class MainActivity extends StateUIActivity {
     private static final int FALLBACK_ACTIONBAR_HEIGHT = 48; //from current guidelines
 
     private static DisplayMetrics displayMetrics;
-
+    private static int index = -1;
+    private static int top = -1;
     private AppCompatTextView marqueueTitle;
-
     private FloatingActionButton fabPlayPause;
     private FloatingActionButton fabPrevious;
     private FloatingActionButton fabNext;
@@ -51,7 +60,7 @@ public class MainActivity extends StateUIActivity {
     private RecyclerView podcastsRecyclerView;
     private AppCompatImageView podcastBigImageView;
     private AppCompatTextView podcastCurrentTime;
-
+    private LinearLayoutManager mLayoutManager;
     private BroadcastReceiver mReceiver;
     private Podcast currentPodcast;
 
@@ -112,6 +121,42 @@ public class MainActivity extends StateUIActivity {
         };
 
         checkPlayServicesAvailable();
+
+        Realm realm = Realm.getDefaultInstance();
+        final RealmResults<Podcast> podcasts = realm.where(Podcast.class).findAll();
+        processPodcastsRealm(podcasts);
+        podcasts.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
+            @Override
+            public void onChange(RealmResults<Podcast> podcastRawList) {
+                processPodcastsRealm(podcastRawList);
+            }
+        });
+    }
+
+    private void processPodcastsRealm(RealmResults<Podcast> podcastRawList) {
+        ArrayList<Podcast> podcastList = new ArrayList<>();
+        for (Podcast podcast : podcastRawList) {
+            Log.e(TAG, podcast.toString());
+            podcastList.add(podcast);
+        }
+
+        PodcastListAdapter mAdapter = new PodcastListAdapter(MainActivity.this, podcastList);
+        podcastsRecyclerView.setAdapter(mAdapter);
+        if (index != -1) {
+            mLayoutManager.scrollToPositionWithOffset(index, top);
+        }
+        if (currentPodcast == null && podcastList.size() > 0 && podcastList.get(0) != null) {
+            currentPodcast = podcastList.get(0);
+            initDetailsPanel();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        index = mLayoutManager.findFirstVisibleItemPosition();
+        View v = podcastsRecyclerView.getChildAt(0);
+        top = (v == null) ? 0 : (v.getTop() - podcastsRecyclerView.getPaddingTop());
     }
 
     @Override
@@ -227,7 +272,7 @@ public class MainActivity extends StateUIActivity {
 
         podcastsRecyclerView = (RecyclerView) findViewById(R.id.podcast_track_list);
         podcastsRecyclerView.setHasFixedSize(true);
-        LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
+        mLayoutManager = new LinearLayoutManager(this);
         podcastsRecyclerView.setLayoutManager(mLayoutManager);
 
 
@@ -311,5 +356,22 @@ public class MainActivity extends StateUIActivity {
                         (int) (((dpWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case StorageUtils.STORAGE_PERMISSIONS: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //fire pending request
+                    Log.d(TAG, "got permissions");
+                } else {
+                    //retry
+                    Log.d(TAG, "no permissions, need to retry the request");
+                }
+            }
+
+        }
     }
 }

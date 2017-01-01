@@ -8,6 +8,7 @@ import com.einmalfel.earl.EarlParser;
 import com.einmalfel.earl.Enclosure;
 import com.einmalfel.earl.Feed;
 import com.einmalfel.earl.Item;
+import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.stateui.StateUIApplication;
 import com.google.android.gms.gcm.GcmNetworkManager;
 import com.google.android.gms.gcm.GcmTaskService;
@@ -77,12 +78,12 @@ public class SyncTasksService extends GcmTaskService {
         try {
             Response response = client.newCall(request).execute();
             InputStream inputStream = response.body().byteStream();
+            Realm realm = Realm.getDefaultInstance();
 
             Feed feed;
             try {
                 feed = EarlParser.parseOrThrow(inputStream, 0);
                 Log.i(TAG, "Processing feed entry: " + feed.getTitle());
-                Realm realm = Realm.getDefaultInstance();
                 for (Item item : feed.getItems()) {
 
                     final Podcast podcast = new Podcast();
@@ -124,6 +125,8 @@ public class SyncTasksService extends GcmTaskService {
                 e.printStackTrace();
                 StateUIApplication.onError();
                 return GcmNetworkManager.RESULT_FAILURE;
+            } finally {
+                realm.close();
             }
 
             if (response.code() != 200) {

@@ -33,6 +33,10 @@ android {
             applicationId 'com.goodcodeforfun.podcasterproject.apptractor'
             buildConfigField 'String', 'PODCAST_URL', '"http://apptractor.ru/Podcast/rss.xml"'
         }
+        howstuffworks {
+            applicationId 'com.goodcodeforfun.podcasterproject.howstuffworks'
+            buildConfigField 'String', 'PODCAST_URL', '"http://www.howstuffworks.com/podcasts/stuff-you-should-know.rss"'
+        }
     }
 }
 
