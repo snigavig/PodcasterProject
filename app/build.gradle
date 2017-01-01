@@ -15,7 +15,23 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            zipAlignEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            debuggable true
+        }
+    }
+
+    productFlavors {
+        etcpodcast {
+            applicationId 'com.goodcodeforfun.podcasterproject.etcpodcast'
+            buildConfigField 'String', 'PODCAST_URL', '"http://feeds.soundcloud.com/users/soundcloud:users:135702648/sounds.rss"'
+        }
+        apptractor {
+            applicationId 'com.goodcodeforfun.podcasterproject.apptractor'
+            buildConfigField 'String', 'PODCAST_URL', '"http://apptractor.ru/Podcast/rss.xml"'
         }
     }
 }

@@ -65,7 +65,7 @@ public class SyncTasksService extends GcmTaskService {
     }
 
     private int syncPodcastsTask() {
-        String url = "http://feeds.soundcloud.com/users/soundcloud:users:135702648/sounds.rss";
+        String url = BuildConfig.PODCAST_URL;
         return fetchUrl(mClient, url);
     }
 
