@@ -3,6 +3,7 @@ package com.goodcodeforfun.podcasterproject;
 import android.util.Log;
 
 import com.facebook.stetho.Stetho;
+import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
 import com.goodcodeforfun.stateui.StateUIApplication;
 import com.google.android.gms.gcm.GcmNetworkManager;
 import com.google.android.gms.gcm.PeriodicTask;

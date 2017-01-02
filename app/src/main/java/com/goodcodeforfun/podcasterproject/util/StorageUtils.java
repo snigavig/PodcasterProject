@@ -1,4 +1,4 @@
-package com.goodcodeforfun.podcasterproject;
+package com.goodcodeforfun.podcasterproject.util;
 
 /**
  * Created by snigavig on 01.01.17.

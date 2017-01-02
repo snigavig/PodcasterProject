@@ -1,4 +1,4 @@
-package com.goodcodeforfun.podcasterproject;
+package com.goodcodeforfun.podcasterproject.sync;
 
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
@@ -8,6 +8,7 @@ import com.einmalfel.earl.EarlParser;
 import com.einmalfel.earl.Enclosure;
 import com.einmalfel.earl.Feed;
 import com.einmalfel.earl.Item;
+import com.goodcodeforfun.podcasterproject.BuildConfig;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.stateui.StateUIApplication;
 import com.google.android.gms.gcm.GcmNetworkManager;
@@ -67,10 +68,10 @@ public class SyncTasksService extends GcmTaskService {
 
     private int syncPodcastsTask() {
         String url = BuildConfig.PODCAST_URL;
-        return fetchUrl(mClient, url);
+        return processRss(mClient, url);
     }
 
-    private int fetchUrl(OkHttpClient client, String url) {
+    private int processRss(OkHttpClient client, String url) {
         Request request = new Request.Builder()
                 .url(url)
                 .build();

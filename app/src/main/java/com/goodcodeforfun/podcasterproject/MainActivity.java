@@ -21,9 +21,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
@@ -31,11 +29,15 @@ import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
+import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
+import com.goodcodeforfun.podcasterproject.util.StorageUtils;
+import com.goodcodeforfun.podcasterproject.util.UIUtils;
 import com.goodcodeforfun.stateui.StateUIActivity;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
@@ -45,9 +47,6 @@ public class MainActivity extends StateUIActivity {
 
     private static final String TAG = "MainActivity";
     private static final int RC_PLAY_SERVICES = 123;
-    private static final int FALLBACK_ACTIONBAR_HEIGHT = 48; //from current guidelines
-
-    private static DisplayMetrics displayMetrics;
     private static int index = -1;
     private static int top = -1;
     private AppCompatTextView marqueueTitle;
@@ -64,42 +63,6 @@ public class MainActivity extends StateUIActivity {
     private BroadcastReceiver mReceiver;
     private Podcast currentPodcast;
 
-    private static void setMargins(View v, int l, int t, int r, int b) {
-        if (v.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
-            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            p.setMargins(l, t, r, b);
-            v.requestLayout();
-        }
-    }
-
-    private static void setHeight(View v, int h) {
-        if (v.getLayoutParams() != null) {
-            ViewGroup.LayoutParams p = v.getLayoutParams();
-            p.height = h;
-            v.requestLayout();
-        }
-    }
-
-    private static int getSeekBarHeight(Context context) {
-        return (int) ((int) context.getResources().getDimension(R.dimen.seek_bar_height) / displayMetrics.density);
-    }
-
-    private static int getFabSize(Context context) {
-        return (int) ((int) context.getResources().getDimension(R.dimen.fab_size) / displayMetrics.density);
-    }
-
-    private static int getFabMargin(Context context) {
-        return (int) ((int) context.getResources().getDimension(R.dimen.fab_margin) / displayMetrics.density);
-    }
-
-    private static int getActionBarSize(Context context) {
-        TypedValue tv = new TypedValue();
-        if (context.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
-            return TypedValue.complexToDimensionPixelSize(tv.data, context.getResources().getDisplayMetrics());
-        }
-        return FALLBACK_ACTIONBAR_HEIGHT;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme);
@@ -114,7 +77,7 @@ public class MainActivity extends StateUIActivity {
                     String tag = intent.getStringExtra(SyncTasksService.EXTRA_TAG);
                     int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
 
-                    String msg = String.format("DONE: %s (%d)", tag, result);
+                    String msg = String.format(Locale.getDefault(), "DONE: %s (%d)", tag, result);
                     showSimpleToast(msg);
                 }
             }
@@ -195,7 +158,7 @@ public class MainActivity extends StateUIActivity {
 
     @Override
     protected void onNoDataUI() {
-
+        //Implement no data ui
     }
 
     @Override
@@ -249,22 +212,21 @@ public class MainActivity extends StateUIActivity {
 
         growAnimation = AnimationUtils.loadAnimation(this, R.anim.simple_grow);
 
-        displayMetrics = getResources().getDisplayMetrics();
+        final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         dpWidth = displayMetrics.widthPixels / displayMetrics.density;
 
         int shadowHeight = (int) (getResources().getDimension(R.dimen.bottom_sheet_shadow) / displayMetrics.density);
 
-        final int visiblePartHeight = (int) (getFabSize(this) * displayMetrics.density) +
-                (int) (getFabMargin(this) * displayMetrics.density * 2) +
+        final int visiblePartHeight = (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
+                (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                 (int) (shadowHeight * displayMetrics.density * 2);
 
-        setHeight(visiblePart, visiblePartHeight);
+        UIUtils.setViewHeight(visiblePart, visiblePartHeight);
 
-
-        setMargins(detailsWrap, 0, 0, 0,
-                (int) (getFabSize(this) * displayMetrics.density) +
-                        (int) (getSeekBarHeight(this) * displayMetrics.density * 2) +
-                        (int) (getFabMargin(this) * displayMetrics.density * 2) +
+        UIUtils.setViewMargins(detailsWrap, 0, 0, 0,
+                (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
+                        (int) (UIUtils.getSeekBarHeight(this) * displayMetrics.density * 2) +
+                        (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                         (int) (shadowHeight * displayMetrics.density));
 
         seekBarProgress = (AppCompatSeekBar) findViewById(R.id.seekBarProgress);
@@ -276,7 +238,7 @@ public class MainActivity extends StateUIActivity {
         podcastsRecyclerView.setLayoutManager(mLayoutManager);
 
 
-        final int actionBarSize = getActionBarSize(this);
+        final int actionBarSize = UIUtils.getActionBarSize(this);
         final int actionBarStabSize = actionBarSize
                 - (int) getResources().getDimension(R.dimen.bottom_sheet_shadow)
                 - 1;
@@ -290,26 +252,26 @@ public class MainActivity extends StateUIActivity {
 
         int fabElevationCompensation = 0;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            setMargins(fabPlayPause, 0, 0, 0, 0);
+            UIUtils.setViewMargins(fabPlayPause, 0, 0, 0, 0);
             fabElevationCompensation = (int) (fabElevation * displayMetrics.density * 2);
         }
 
 
         behavior.setPeekHeight(
-                (int) (getFabSize(this) * displayMetrics.density)
-                        + (int) (getFabMargin(this) * displayMetrics.density * 2)
+                (int) (UIUtils.getFabSize(this) * displayMetrics.density)
+                        + (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2)
                         + actionBarStabSize
                         + (int) (shadowHeight * displayMetrics.density * 2)
                         + fabElevationCompensation);
 
 
-        setMargins(podcastsRecyclerView, 0, 0, 0,
-                (int) (getFabSize(this) * displayMetrics.density) +
-                        (int) (getFabMargin(this) * displayMetrics.density * 2) +
+        UIUtils.setViewMargins(podcastsRecyclerView, 0, 0, 0,
+                (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
+                        (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                         (int) (shadowHeight * displayMetrics.density));
 
 
-        setMargins(marqueueTitle, 0, 0,
+        UIUtils.setViewMargins(marqueueTitle, 0, 0,
                 (int) ((dpWidth * displayMetrics.density) / 3), 0);
 
         fabPlayPause.setTranslationX((dpWidth * displayMetrics.density) / 3);
@@ -352,7 +314,7 @@ public class MainActivity extends StateUIActivity {
                 }
                 podcastsRecyclerView.setAlpha(slideOffsetNegative);
 
-                setMargins(marqueueTitle, 0, 0,
+                UIUtils.setViewMargins(marqueueTitle, 0, 0,
                         (int) (((dpWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
             }
         });
@@ -371,7 +333,6 @@ public class MainActivity extends StateUIActivity {
                     Log.d(TAG, "no permissions, need to retry the request");
                 }
             }
-
         }
     }
 }

@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">Podcaster Project</string>
+    <string name="app_name">Podcaster Launcher</string>
     <string name="download_description">Saving podcast for offline use</string>
     <string name="download_title">Downloading…</string>
+    <string name="content_description_cover_image">Cover image</string>
 </resources>

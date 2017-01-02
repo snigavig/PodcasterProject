@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'realm-android'
 
+//noinspection GroovyMissingReturnStatement
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
@@ -24,15 +25,24 @@ android {
         }
     }
 
+    //noinspection GroovyMissingReturnStatement
     productFlavors {
+        //noinspection GroovyMissingReturnStatement
+        main {
+            applicationId 'com.goodcodeforfun.podcasterproject'
+            buildConfigField 'String', 'PODCAST_URL', '""'
+        }
+        //noinspection GroovyMissingReturnStatement
         etcpodcast {
             applicationId 'com.goodcodeforfun.podcasterproject.etcpodcast'
             buildConfigField 'String', 'PODCAST_URL', '"http://feeds.soundcloud.com/users/soundcloud:users:135702648/sounds.rss"'
         }
+        //noinspection GroovyMissingReturnStatement
         apptractor {
             applicationId 'com.goodcodeforfun.podcasterproject.apptractor'
             buildConfigField 'String', 'PODCAST_URL', '"http://apptractor.ru/Podcast/rss.xml"'
         }
+        //noinspection GroovyMissingReturnStatement
         howstuffworks {
             applicationId 'com.goodcodeforfun.podcasterproject.howstuffworks'
             buildConfigField 'String', 'PODCAST_URL', '"http://www.howstuffworks.com/podcasts/stuff-you-should-know.rss"'
