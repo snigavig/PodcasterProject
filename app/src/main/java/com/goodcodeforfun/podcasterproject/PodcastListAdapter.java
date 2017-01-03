@@ -129,10 +129,15 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
 
-            Glide.with(activity)
-                    .load(podcast.getImageUrl())
-                    .placeholder(R.color.colorPrimaryHalfTransparent)
-                    .into(viewHolder.podcastImageView);
+            if (!PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().isHideImages()) {
+                viewHolder.podcastImageView.setVisibility(View.VISIBLE);
+                Glide.with(activity)
+                        .load(podcast.getImageUrl())
+                        .placeholder(R.mipmap.ic_launcher)
+                        .into(viewHolder.podcastImageView);
+            } else {
+                viewHolder.podcastImageView.setVisibility(View.GONE);
+            }
         }
 
     }

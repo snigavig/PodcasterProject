@@ -2,6 +2,7 @@
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cv_wrap"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -12,8 +13,12 @@
         android:id="@+id/podcastImageView"
         android:layout_width="96dp"
         android:layout_height="96dp"
-        android:padding="5dp"
-        app:srcCompat="@color/colorPrimaryHalfTransparent" />
+        android:paddingBottom="5dp"
+        android:paddingLeft="5dp"
+        android:paddingStart="5dp"
+        android:paddingTop="5dp"
+        app:srcCompat="@color/colorPrimaryHalfTransparent"
+        tools:ignore="RtlSymmetry" />
 
     <android.support.v7.widget.AppCompatTextView
         android:id="@+id/tv_title"
@@ -28,8 +33,11 @@
         android:gravity="center_vertical"
         android:lines="3"
         android:maxLines="3"
+        android:paddingLeft="5dp"
+        android:paddingStart="5dp"
         android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-        android:textColor="@color/textColor" />
+        android:textColor="@color/textColor"
+        tools:ignore="RtlSymmetry" />
 
     <android.support.v7.widget.AppCompatImageButton
         android:id="@id/downloadButton"
@@ -40,5 +48,5 @@
         android:layout_centerVertical="true"
         android:layout_margin="5dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_archive_black_24dp" />
+        app:srcCompat="@drawable/ic_archive_black_24dp" />
 </RelativeLayout>

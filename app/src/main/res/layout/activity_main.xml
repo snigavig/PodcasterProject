@@ -53,9 +53,9 @@
                 android:layout_marginStart="25dp"
                 android:alpha="0"
                 android:clickable="true"
-                android:src="@drawable/ic_skip_previous_24dp"
                 app:elevation="@dimen/fab_elevation"
-                app:fabSize="mini" />
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_skip_previous_24dp" />
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/play_pause_button"
@@ -64,8 +64,8 @@
                 android:layout_marginBottom="@dimen/fab_margin"
                 android:layout_marginTop="@dimen/fab_margin"
                 android:clickable="true"
-                android:src="@drawable/ic_play_arrow_24dp"
-                app:elevation="@dimen/fab_elevation" />
+                app:elevation="@dimen/fab_elevation"
+                app:srcCompat="@drawable/ic_play_arrow_24dp" />
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/next_track_button"
@@ -77,9 +77,9 @@
                 android:layout_marginStart="25dp"
                 android:alpha="0"
                 android:clickable="true"
-                android:src="@drawable/ic_skip_next_24dp"
                 app:elevation="@dimen/fab_elevation"
-                app:fabSize="mini" />
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_skip_next_24dp" />
         </LinearLayout>
     </LinearLayout>
 

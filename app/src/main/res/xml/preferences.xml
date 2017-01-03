@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:key="sync_category"
+        android:title="Sync Information">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="perform_sync"
+            android:summary="Enable or disable data sync"
+            android:title="Enable Auto Sync" />
+
+        <ListPreference
+            android:defaultValue="1000"
+            android:dependency="perform_sync"
+            android:entries="@array/updateInterval"
+            android:entryValues="@array/updateIntervalValues"
+            android:key="sync_interval"
+            android:summary="Define how often sync will be performed"
+            android:title="Sync interval" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="custom_category"
+        android:title="Customisations">
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/show_podcast_images_key"
+            android:summary="Show or hide podcast images"
+            android:title="Hide Podcast Images" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

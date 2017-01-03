@@ -21,6 +21,8 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -62,6 +64,7 @@ public class MainActivity extends StateUIActivity {
     private LinearLayoutManager mLayoutManager;
     private BroadcastReceiver mReceiver;
     private Podcast currentPodcast;
+    private PodcastListAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +81,9 @@ public class MainActivity extends StateUIActivity {
                     int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
 
                     String msg = String.format(Locale.getDefault(), "DONE: %s (%d)", tag, result);
+                    if (mAdapter != null) {
+                        mAdapter.notifyDataSetChanged();
+                    }
                     showSimpleToast(msg);
                 }
             }
@@ -102,8 +108,7 @@ public class MainActivity extends StateUIActivity {
             Log.e(TAG, podcast.toString());
             podcastList.add(podcast);
         }
-
-        PodcastListAdapter mAdapter = new PodcastListAdapter(MainActivity.this, podcastList);
+        mAdapter = new PodcastListAdapter(MainActivity.this, podcastList);
         podcastsRecyclerView.setAdapter(mAdapter);
         if (index != -1) {
             mLayoutManager.scrollToPositionWithOffset(index, top);
@@ -131,6 +136,7 @@ public class MainActivity extends StateUIActivity {
 
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.registerReceiver(mReceiver, filter);
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -141,18 +147,24 @@ public class MainActivity extends StateUIActivity {
         manager.unregisterReceiver(mReceiver);
     }
 
-    private void checkPlayServicesAvailable() {
-        GoogleApiAvailability availability = GoogleApiAvailability.getInstance();
-        int resultCode = availability.isGooglePlayServicesAvailable(this);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (availability.isUserResolvableError(resultCode)) {
-                // Show dialog to resolve the error.
-                availability.getErrorDialog(this, resultCode, RC_PLAY_SERVICES).show();
-            } else {
-                // Unresolvable error
-                showSimpleToast("Google Play Services error");
-            }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
         }
     }
 
@@ -169,6 +181,21 @@ public class MainActivity extends StateUIActivity {
     @Override
     public void onErrorUI() {
         showSimpleToast("Error");
+    }
+
+    private void checkPlayServicesAvailable() {
+        GoogleApiAvailability availability = GoogleApiAvailability.getInstance();
+        int resultCode = availability.isGooglePlayServicesAvailable(this);
+
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (availability.isUserResolvableError(resultCode)) {
+                // Show dialog to resolve the error.
+                availability.getErrorDialog(this, resultCode, RC_PLAY_SERVICES).show();
+            } else {
+                // Unresolvable error
+                showSimpleToast("Google Play Services error");
+            }
+        }
     }
 
     private void initDetailsPanel() {

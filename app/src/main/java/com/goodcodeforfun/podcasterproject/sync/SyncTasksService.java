@@ -68,7 +68,12 @@ public class SyncTasksService extends GcmTaskService {
 
     private int syncPodcastsTask() {
         String url = BuildConfig.PODCAST_URL;
-        return processRss(mClient, url);
+        if (!url.equals("")) {
+            return processRss(mClient, url);
+        } else {
+            //TODO: implement logic for main client
+            return GcmNetworkManager.RESULT_SUCCESS;
+        }
     }
 
     private int processRss(OkHttpClient client, String url) {
