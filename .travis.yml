@@ -2,11 +2,17 @@
 language: android
 android:
         components:
+                - tools
                 - platform-tools
+                - tools
                 - build-tools-25.0.2
                 - android-25
                 - extra-android-m2repository
                 - extra-google-m2repository
+licenses:
+        - 'android-sdk-preview-license-.+'
+        - 'android-sdk-license-.+'
+        - 'google-gdk-license-.+'
 jdk:
         - oraclejdk8
 script:
