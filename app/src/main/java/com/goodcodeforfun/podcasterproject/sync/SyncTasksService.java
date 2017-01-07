@@ -34,7 +34,7 @@ import okhttp3.Response;
 public class SyncTasksService extends GcmTaskService {
 
     public static final String TASK_TAG_SYNC_PODCASTS = "sync_podcasts_task";
-    public static final String ACTION_DONE = "GcmTaskService#ACTION_DONE";
+    public static final String ACTION_DONE = "SyncTasksService#ACTION_DONE";
     public static final String EXTRA_TAG = "extra_tag";
     public static final String EXTRA_RESULT = "extra_result";
     private static final String TAG = "SyncTasksService";

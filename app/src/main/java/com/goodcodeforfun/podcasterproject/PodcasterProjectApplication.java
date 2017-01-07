@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.facebook.stetho.Stetho;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
+import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.SharedPreferencesUtils;
 import com.goodcodeforfun.stateui.StateUIApplication;
 import com.google.android.gms.gcm.GcmNetworkManager;
@@ -29,6 +30,7 @@ public class PodcasterProjectApplication extends StateUIApplication {
     public void onCreate() {
         super.onCreate();
         mInstance = this;
+        Foreground.init(this);
         mSharedPreferencesUtils = new SharedPreferencesUtils(this);
         Realm.init(this);
         Stetho.initializeWithDefaults(this);

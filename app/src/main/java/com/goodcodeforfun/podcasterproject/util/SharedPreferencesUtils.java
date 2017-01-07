@@ -5,9 +5,13 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import com.goodcodeforfun.podcasterproject.PlayerService;
 import com.goodcodeforfun.podcasterproject.R;
 
 public class SharedPreferencesUtils {
+    public static final String LAST_STATE_KEY = "LAST_STATE";
+    public static final String LAST_PODCAST_KEY = "LAST_PODCAST";
+    public static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
     private static String IS_HIDE_IMAGES_KEY;
     private static SharedPreferences prefs;
 
@@ -33,6 +37,37 @@ public class SharedPreferencesUtils {
     public void setHideImages(boolean value) {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(IS_HIDE_IMAGES_KEY, value);
+        editor.apply();
+    }
+
+
+    public int getLastState() {
+        return prefs.getInt(LAST_STATE_KEY, PlayerService.STOPPED);
+    }
+
+    public void setLastState(@PlayerService.PlayerState int value) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt(LAST_STATE_KEY, value);
+        editor.apply();
+    }
+
+    public String getLastPodcast() {
+        return prefs.getString(LAST_PODCAST_KEY, "");
+    }
+
+    public void setLastPodcast(String value) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(LAST_PODCAST_KEY, value);
+        editor.apply();
+    }
+
+    public int getLastPodcastTime() {
+        return prefs.getInt(LAST_PODCAST_TIME_KEY, -1);
+    }
+
+    public void setLastPodcastTime(int value) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt(LAST_PODCAST_TIME_KEY, value);
         editor.apply();
     }
 }

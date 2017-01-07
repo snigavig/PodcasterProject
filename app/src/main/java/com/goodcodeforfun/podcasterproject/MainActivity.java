@@ -8,10 +8,12 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.AppCompatSeekBar;
@@ -28,6 +30,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 
 import com.bumptech.glide.Glide;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
@@ -40,12 +43,20 @@ import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 
-public class MainActivity extends StateUIActivity {
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_ACTION_KEY;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PAUSE_ACTION_KEY;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION_KEY;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION_KEY;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_UPDATE_ACTION_KEY;
+
+public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarChangeListener,
+        View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     private static final int RC_PLAY_SERVICES = 123;
@@ -62,9 +73,75 @@ public class MainActivity extends StateUIActivity {
     private AppCompatImageView podcastBigImageView;
     private AppCompatTextView podcastCurrentTime;
     private LinearLayoutManager mLayoutManager;
-    private BroadcastReceiver mReceiver;
     private Podcast currentPodcast;
     private PodcastListAdapter mAdapter;
+    private AppCompatTextView podcastTime;
+
+    private BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(SyncTasksService.ACTION_DONE)) {
+                String tag = intent.getStringExtra(SyncTasksService.EXTRA_TAG);
+                int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
+
+                String msg = String.format(Locale.getDefault(), "DONE: %s (%d)", tag, result);
+                if (mAdapter != null) {
+                    mAdapter.notifyDataSetChanged();
+                }
+                showSimpleToast(msg);
+            }
+        }
+    };
+
+    private BroadcastReceiver mPlayerStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int mediaFileLengthInMilliseconds;
+            switch (intent.getAction()) {
+                case BROADCAST_PLAY_ACTION_KEY:
+                    mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
+                    if (mediaFileLengthInMilliseconds != -1) {
+                        initPodcastTime(mediaFileLengthInMilliseconds);
+                    }
+                    break;
+                case BROADCAST_PAUSE_ACTION_KEY:
+                    break;
+                case BROADCAST_NEXT_ACTION_KEY:
+                    break;
+                case BROADCAST_PREVIOUS_ACTION_KEY:
+                    break;
+                case BROADCAST_UPDATE_ACTION_KEY:
+                    mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
+                    int currentTime = intent.getIntExtra(PlayerService.EXTRA_PODCAST_CURRENT_TIME_KEY, -1);
+                    if (mediaFileLengthInMilliseconds != -1 && currentTime != -1) {
+                        if (seekBarProgress != null) {
+                            seekBarProgress.setProgress((int) (((float) currentTime / mediaFileLengthInMilliseconds) * 100));
+                        }
+                    }
+                    break;
+                default:
+                    break;
+
+            }
+        }
+    };
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+//        if (mediaPlayer.isPlaying()) {
+//            int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * seekBar.getProgress();
+//            mediaPlayer.seekTo(playPositionInMilliseconds);
+//        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,25 +149,11 @@ public class MainActivity extends StateUIActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         prepareUI();
-
-        mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.getAction().equals(SyncTasksService.ACTION_DONE)) {
-                    String tag = intent.getStringExtra(SyncTasksService.EXTRA_TAG);
-                    int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
-
-                    String msg = String.format(Locale.getDefault(), "DONE: %s (%d)", tag, result);
-                    if (mAdapter != null) {
-                        mAdapter.notifyDataSetChanged();
-                    }
-                    showSimpleToast(msg);
-                }
-            }
-        };
-
         checkPlayServicesAvailable();
+        populateUI();
+    }
 
+    private void populateUI() {
         Realm realm = Realm.getDefaultInstance();
         final RealmResults<Podcast> podcasts = realm.where(Podcast.class).findAll();
         processPodcastsRealm(podcasts);
@@ -131,11 +194,20 @@ public class MainActivity extends StateUIActivity {
     public void onStart() {
         super.onStart();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(SyncTasksService.ACTION_DONE);
-
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
-        manager.registerReceiver(mReceiver, filter);
+
+        IntentFilter syncStateFilter = new IntentFilter();
+        syncStateFilter.addAction(SyncTasksService.ACTION_DONE);
+
+        IntentFilter playerStateFilter = new IntentFilter();
+        playerStateFilter.addAction(BROADCAST_PLAY_ACTION_KEY);
+        playerStateFilter.addAction(BROADCAST_PAUSE_ACTION_KEY);
+        playerStateFilter.addAction(BROADCAST_NEXT_ACTION_KEY);
+        playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION_KEY);
+
+        manager.registerReceiver(mSyncStatusReceiver, syncStateFilter);
+        manager.registerReceiver(mPlayerStatusReceiver, playerStateFilter);
+
         mAdapter.notifyDataSetChanged();
     }
 
@@ -144,7 +216,8 @@ public class MainActivity extends StateUIActivity {
         super.onStop();
 
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
-        manager.unregisterReceiver(mReceiver);
+        manager.unregisterReceiver(mSyncStatusReceiver);
+        manager.unregisterReceiver(mPlayerStatusReceiver);
     }
 
     @Override
@@ -198,6 +271,25 @@ public class MainActivity extends StateUIActivity {
         }
     }
 
+    private void initSeekBar() {
+        if (seekBarProgress == null) {
+            seekBarProgress = (AppCompatSeekBar) findViewById(R.id.seekBarProgress);
+            seekBarProgress.setOnSeekBarChangeListener(this);
+        }
+    }
+
+    private void initPodcastTime(final int millis) {
+        if (podcastTime == null) {
+            podcastTime = (AppCompatTextView) findViewById(R.id.podcastTotalTimeTextView);
+            podcastTime.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                    TimeUnit.MILLISECONDS.toHours(millis),
+                    TimeUnit.MILLISECONDS.toMinutes(millis) -
+                            TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)),
+                    TimeUnit.MILLISECONDS.toSeconds(millis) -
+                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
+        }
+    }
+
     private void initDetailsPanel() {
         if (marqueueTitle != null && currentPodcast != null) {
             marqueueTitle.setText(currentPodcast.getTitle());
@@ -206,6 +298,29 @@ public class MainActivity extends StateUIActivity {
                     .load(currentPodcast.getImageUrl())
                     .placeholder(R.color.colorPrimaryHalfTransparent)
                     .into(podcastBigImageView);
+        }
+        initSeekBar();
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        fabPlayPause.setVisibility(View.VISIBLE);
+        fabPlayPause.startAnimation(growAnimation);
+        super.onPostCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.play_pause_button) {
+            if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PlayerService.PLAYING) {
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
+                PlayerService.stopPlayPlayerService(MainActivity.this);
+                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_24dp));
+            } else {
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PLAYING);
+                PlayerService.startPlayPlayerService(MainActivity.this, currentPodcast.getPrimaryKey());
+                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
+            }
         }
     }
 
@@ -219,6 +334,8 @@ public class MainActivity extends StateUIActivity {
         fabPrevious = (FloatingActionButton) findViewById(R.id.previous_track_button);
         fabNext = (FloatingActionButton) findViewById(R.id.next_track_button);
 
+
+        fabPlayPause.setOnClickListener(this);
         fabPrevious.setClickable(false);
         fabNext.setClickable(false);
 

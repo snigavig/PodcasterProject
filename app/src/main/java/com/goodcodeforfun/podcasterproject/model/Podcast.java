@@ -22,6 +22,12 @@ public class Podcast extends RealmObject {
     @Required
     private Date date;
 
+    public String getPrimaryKey() {
+        return audioUrl;
+    }
+
+    ;
+
     public Date getDate() {
         return date;
     }
