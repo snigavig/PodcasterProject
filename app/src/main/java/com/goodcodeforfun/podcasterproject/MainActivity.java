@@ -49,20 +49,21 @@ import io.realm.Realm;
 import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_BUFFERING_UPDATE_ACTION_KEY;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_ACTION_KEY;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PAUSE_ACTION_KEY;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION_KEY;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION_KEY;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_UPDATE_ACTION_KEY;
 
-public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarChangeListener,
+public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
 
     private static final String TAG = "MainActivity";
     private static final int RC_PLAY_SERVICES = 123;
     private static int index = -1;
     private static int top = -1;
-    private AppCompatTextView marqueueTitle;
+    //private AppCompatTextView marqueueTitle;
     private FloatingActionButton fabPlayPause;
     private FloatingActionButton fabPrevious;
     private FloatingActionButton fabNext;
@@ -70,12 +71,16 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
     private AppBarLayout mActionBar;
     private AppCompatSeekBar seekBarProgress;
     private RecyclerView podcastsRecyclerView;
-    private AppCompatImageView podcastBigImageView;
+    //private AppCompatImageView podcastBigImageView;
     private AppCompatTextView podcastCurrentTime;
     private LinearLayoutManager mLayoutManager;
     private Podcast currentPodcast;
     private PodcastListAdapter mAdapter;
     private AppCompatTextView podcastTime;
+    private DisplayMetrics displayMetrics;
+    private float dpScreenWidth;
+    private int shadowHeight;
+    private int actionBarStabSize;
 
     private BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
         @Override
@@ -110,6 +115,13 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                     break;
                 case BROADCAST_PREVIOUS_ACTION_KEY:
                     break;
+                case BROADCAST_BUFFERING_UPDATE_ACTION_KEY:
+                    int bufferingValue = intent.getIntExtra(PlayerService.EXTRA_PODCAST_BUFFERING_VALUE_KEY, -1);
+                    Log.e("BUFFERING", String.valueOf(bufferingValue));
+                    if (seekBarProgress != null && bufferingValue != -1) {
+                        seekBarProgress.setSecondaryProgress(bufferingValue);
+                    }
+                    break;
                 case BROADCAST_UPDATE_ACTION_KEY:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     int currentTime = intent.getIntExtra(PlayerService.EXTRA_PODCAST_CURRENT_TIME_KEY, -1);
@@ -127,30 +139,25 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
     };
 
     @Override
-    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-
-    }
-
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
-//        if (mediaPlayer.isPlaying()) {
-//            int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * seekBar.getProgress();
-//            mediaPlayer.seekTo(playPositionInMilliseconds);
-//        }
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        prepareUIMetrics();
         prepareUI();
         checkPlayServicesAvailable();
         populateUI();
+    }
+
+    private void prepareUIMetrics() {
+        displayMetrics = getResources().getDisplayMetrics();
+        dpScreenWidth = displayMetrics.widthPixels / displayMetrics.density;
+        shadowHeight = (int) (getResources().getDimension(R.dimen.bottom_sheet_shadow) / displayMetrics.density);
+
+        final int actionBarSize = UIUtils.getActionBarSize(this);
+        actionBarStabSize = actionBarSize
+                - (int) getResources().getDimension(R.dimen.bottom_sheet_shadow)
+                - 1;
     }
 
     private void populateUI() {
@@ -204,6 +211,7 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
         playerStateFilter.addAction(BROADCAST_PAUSE_ACTION_KEY);
         playerStateFilter.addAction(BROADCAST_NEXT_ACTION_KEY);
         playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION_KEY);
+        playerStateFilter.addAction(BROADCAST_BUFFERING_UPDATE_ACTION_KEY);
 
         manager.registerReceiver(mSyncStatusReceiver, syncStateFilter);
         manager.registerReceiver(mPlayerStatusReceiver, playerStateFilter);
@@ -274,6 +282,7 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
     private void initSeekBar() {
         if (seekBarProgress == null) {
             seekBarProgress = (AppCompatSeekBar) findViewById(R.id.seekBarProgress);
+            seekBarProgress.setMax(99);
             seekBarProgress.setOnSeekBarChangeListener(this);
         }
     }
@@ -291,6 +300,14 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
     }
 
     private void initDetailsPanel() {
+        final FrameLayout detailsWrap = (FrameLayout) findViewById(R.id.detailsWrap);
+        final LinearLayout visiblePart = (LinearLayout) detailsWrap.findViewById(R.id.visiblePart);
+        final AppCompatImageView podcastBigImageView = (AppCompatImageView) detailsWrap.findViewById(R.id.podcastBigImageView);
+
+        final AppCompatTextView marqueueTitle = (AppCompatTextView) detailsWrap.findViewById(R.id.marqueeTitle);
+
+        podcastCurrentTime = (AppCompatTextView) detailsWrap.findViewById(R.id.podcastCurrentTimeTextView);
+
         if (marqueueTitle != null && currentPodcast != null) {
             marqueueTitle.setText(currentPodcast.getTitle());
 
@@ -300,67 +317,12 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                     .into(podcastBigImageView);
         }
         initSeekBar();
-    }
-
-    @Override
-    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
-        fabPlayPause.setVisibility(View.VISIBLE);
-        fabPlayPause.startAnimation(growAnimation);
-        super.onPostCreate(savedInstanceState);
-    }
-
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.play_pause_button) {
-            if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PlayerService.PLAYING) {
-                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
-                PlayerService.stopPlayPlayerService(MainActivity.this);
-                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_24dp));
-            } else {
-                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PLAYING);
-                PlayerService.startPlayPlayerService(MainActivity.this, currentPodcast.getPrimaryKey());
-                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
-            }
-        }
-    }
-
-    private void prepareUI() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        mActionBar = (AppBarLayout) findViewById(R.id.toolbarLayout);
-
-        fabPlayPause = (FloatingActionButton) findViewById(R.id.play_pause_button);
-        fabPrevious = (FloatingActionButton) findViewById(R.id.previous_track_button);
-        fabNext = (FloatingActionButton) findViewById(R.id.next_track_button);
-
-
-        fabPlayPause.setOnClickListener(this);
-        fabPrevious.setClickable(false);
-        fabNext.setClickable(false);
-
-        final View actionBarStabView = findViewById(R.id.action_bar_stab_view);
-        final float dpWidth;
         final CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.main_coordinator);
         final View bottomSheet = coordinatorLayout.findViewById(R.id.details_bottom_sheet);
 
         final BottomSheetBehavior behavior = BottomSheetBehavior.from(bottomSheet);
 
-
-        final FrameLayout detailsWrap = (FrameLayout) findViewById(R.id.detailsWrap);
-        final LinearLayout visiblePart = (LinearLayout) detailsWrap.findViewById(R.id.visiblePart);
-        podcastBigImageView = (AppCompatImageView) detailsWrap.findViewById(R.id.podcastBigImageView);
-
-        marqueueTitle = (AppCompatTextView) detailsWrap.findViewById(R.id.marqueeTitle);
-        podcastCurrentTime = (AppCompatTextView) detailsWrap.findViewById(R.id.podcastCurrentTimeTextView);
-
-        growAnimation = AnimationUtils.loadAnimation(this, R.anim.simple_grow);
-
-        final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        dpWidth = displayMetrics.widthPixels / displayMetrics.density;
-
-        int shadowHeight = (int) (getResources().getDimension(R.dimen.bottom_sheet_shadow) / displayMetrics.density);
-
+        int fabElevation = (int) (getResources().getDimension(R.dimen.fab_elevation) / displayMetrics.density);
         final int visiblePartHeight = (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
                 (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                 (int) (shadowHeight * displayMetrics.density * 2);
@@ -373,26 +335,8 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                         (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                         (int) (shadowHeight * displayMetrics.density));
 
-        seekBarProgress = (AppCompatSeekBar) findViewById(R.id.seekBarProgress);
-        seekBarProgress.setMax(99);
-
-        podcastsRecyclerView = (RecyclerView) findViewById(R.id.podcast_track_list);
-        podcastsRecyclerView.setHasFixedSize(true);
-        mLayoutManager = new LinearLayoutManager(this);
-        podcastsRecyclerView.setLayoutManager(mLayoutManager);
-
-
-        final int actionBarSize = UIUtils.getActionBarSize(this);
-        final int actionBarStabSize = actionBarSize
-                - (int) getResources().getDimension(R.dimen.bottom_sheet_shadow)
-                - 1;
-
-        actionBarStabView.setLayoutParams(
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, actionBarStabSize));
-
-
-        int fabElevation = (int) (getResources().getDimension(R.dimen.fab_elevation) / displayMetrics.density);
+        UIUtils.setViewMargins(marqueueTitle, 0, 0,
+                (int) ((dpScreenWidth * displayMetrics.density) / 3), 0);
 
         int fabElevationCompensation = 0;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -400,28 +344,12 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
             fabElevationCompensation = (int) (fabElevation * displayMetrics.density * 2);
         }
 
-
         behavior.setPeekHeight(
                 (int) (UIUtils.getFabSize(this) * displayMetrics.density)
                         + (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2)
                         + actionBarStabSize
                         + (int) (shadowHeight * displayMetrics.density * 2)
                         + fabElevationCompensation);
-
-
-        UIUtils.setViewMargins(podcastsRecyclerView, 0, 0, 0,
-                (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
-                        (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
-                        (int) (shadowHeight * displayMetrics.density));
-
-
-        UIUtils.setViewMargins(marqueueTitle, 0, 0,
-                (int) ((dpWidth * displayMetrics.density) / 3), 0);
-
-        fabPlayPause.setTranslationX((dpWidth * displayMetrics.density) / 3);
-
-        initDetailsPanel();
-
         behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
@@ -449,7 +377,7 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                 float slideOffsetNegative = (1 - slideOffset);
                 float slideOffsetEasingCoefficient = (10 * slideOffsetNegative);
                 float slideOffsetEased = slideOffset / slideOffsetEasingCoefficient;
-                fabPlayPause.setTranslationX(((dpWidth * displayMetrics.density) / 3) * slideOffsetNegative);
+                fabPlayPause.setTranslationX(((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative);
                 fabNext.setAlpha(slideOffsetEased);
                 fabPrevious.setAlpha(slideOffsetEased);
                 seekBarProgress.setAlpha(slideOffsetEased);
@@ -459,9 +387,67 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                 podcastsRecyclerView.setAlpha(slideOffsetNegative);
 
                 UIUtils.setViewMargins(marqueueTitle, 0, 0,
-                        (int) (((dpWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
+                        (int) (((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
             }
         });
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        fabPlayPause.setVisibility(View.VISIBLE);
+        fabPlayPause.startAnimation(growAnimation);
+        super.onPostCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.play_pause_button) {
+            if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PlayerService.PLAYING) {
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
+                PlayerService.stopMediaPlayback(MainActivity.this);
+                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_24dp));
+            } else {
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PLAYING);
+                PlayerService.startMediaPlayback(MainActivity.this, currentPodcast.getPrimaryKey());
+                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
+            }
+        }
+    }
+
+    private void prepareUI() {
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        mActionBar = (AppBarLayout) findViewById(R.id.toolbarLayout);
+
+        fabPlayPause = (FloatingActionButton) findViewById(R.id.play_pause_button);
+        fabPrevious = (FloatingActionButton) findViewById(R.id.previous_track_button);
+        fabNext = (FloatingActionButton) findViewById(R.id.next_track_button);
+        fabPlayPause.setOnClickListener(this);
+        fabPrevious.setClickable(false);
+        fabNext.setClickable(false);
+
+        final View actionBarStabView = findViewById(R.id.action_bar_stab_view);
+        growAnimation = AnimationUtils.loadAnimation(this, R.anim.simple_grow);
+
+
+        podcastsRecyclerView = (RecyclerView) findViewById(R.id.podcast_track_list);
+        podcastsRecyclerView.setHasFixedSize(true);
+        mLayoutManager = new LinearLayoutManager(this);
+        podcastsRecyclerView.setLayoutManager(mLayoutManager);
+
+        actionBarStabView.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, actionBarStabSize));
+
+        UIUtils.setViewMargins(podcastsRecyclerView, 0, 0, 0,
+                (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
+                        (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
+                        (int) (shadowHeight * displayMetrics.density));
+
+        fabPlayPause.setTranslationX((dpScreenWidth * displayMetrics.density) / 3);
+
+        initDetailsPanel();
     }
 
     @Override
@@ -478,5 +464,20 @@ public class MainActivity extends StateUIActivity implements SeekBar.OnSeekBarCh
                 }
             }
         }
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        PlayerService.seekMedia(this, seekBar.getProgress());
     }
 }

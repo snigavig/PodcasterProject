@@ -41,19 +41,21 @@ public class PlayerService extends Service implements
     public static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
     public static final String START_PLAY_ACTION = "PlayerService#ACTION_START";
     public static final String STOP_PLAY_ACTION = "PlayerService#ACTION_STOP";
+    public static final String SEEK_ACTION_KEY = "PlayerService#ACTION_SEEK";
     public static final String BROADCAST_PREVIOUS_ACTION_KEY = "PlayerService#ACTION_PREVIOUS";
     public static final String BROADCAST_PAUSE_ACTION_KEY = "PlayerService#ACTION_PAUSE";
     public static final String BROADCAST_PLAY_ACTION_KEY = "PlayerService#ACTION_PLAY";
     public static final String BROADCAST_NEXT_ACTION_KEY = "PlayerService#ACTION_NEXT";
-    public static final String BROADCAST_SEEK_ACTION_KEY = "PlayerService#ACTION_SEEK";
     public static final String BROADCAST_UPDATE_ACTION_KEY = "PlayerService#ACTION_UPDATE";
+    public static final String BROADCAST_BUFFERING_UPDATE_ACTION_KEY = "PlayerService#ACTION_BUFFERING_UPDATE";
     public static final String EXTRA_PODCAST_TOTAL_TIME_KEY = "EXTRA_PODCAST_TOTAL_TIME";
     public static final String EXTRA_PODCAST_CURRENT_TIME_KEY = "EXTRA_PODCAST_CURRENT_TIME";
     public static final String EXTRA_PODCAST_PRIMARY_KEY_KEY = "EXTRA_PODCAST_PRIMARY_KEY";
+    public static final String EXTRA_PODCAST_BUFFERING_VALUE_KEY = "EXTRA_PODCAST_BUFFERING_VALUE";
+    public static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
     private final Handler handler = new Handler();
-
     private final Foreground.Listener myListener = new Foreground.Listener() {
         public void onBecameForeground() {
             //initSeekBar();
@@ -63,16 +65,16 @@ public class PlayerService extends Service implements
             //seekBarProgress = null;
         }
     };
+    private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
     private boolean isPaused = true;
     private String activePodcastName;
-    //private int mediaFileLengthInMilliseconds;
 
     public PlayerService() {
     }
 
-    public static void startPlayPlayerService(Context context, String primaryKey) {
+    public static void startMediaPlayback(Context context, String primaryKey) {
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcast(primaryKey);
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
         podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, primaryKey);
@@ -80,7 +82,14 @@ public class PlayerService extends Service implements
         context.startService(podcastPlayerServiceIntent);
     }
 
-    public static void stopPlayPlayerService(Context context) {
+    public static void seekMedia(Context context, int progress) {
+        Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, progress);
+        podcastPlayerServiceIntent.setAction(SEEK_ACTION_KEY);
+        context.startService(podcastPlayerServiceIntent);
+    }
+
+    public static void stopMediaPlayback(Context context) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
         podcastPlayerServiceIntent.setAction(STOP_PLAY_ACTION);
         context.startService(podcastPlayerServiceIntent);
@@ -152,6 +161,13 @@ public class PlayerService extends Service implements
             startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
         } else if (UPDATE_FOREGROUND_ACTION.equals(intent.getAction())) {
             startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
+        } else if (SEEK_ACTION_KEY.equals(intent.getAction())) {
+            int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
+            Log.e("Got progress", String.valueOf(progress));
+            if (mediaPlayer.isPlaying() && progress != -1) {
+                int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
+                mediaPlayer.seekTo(playPositionInMilliseconds);
+            }
         } else if (START_PLAY_ACTION.equals(intent.getAction())) {
             String primaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
             Realm realm = Realm.getDefaultInstance();
@@ -193,6 +209,7 @@ public class PlayerService extends Service implements
         if (intent != null) {
             Thread t = new Thread() {
                 public void run() {
+                    Log.e("Got intent: ", intent.getAction());
                     handleIntent(intent);
                 }
             };
@@ -203,7 +220,9 @@ public class PlayerService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-        mWakeLock.release();
+        if (mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
         Foreground.get(this).removeListener(myListener);
     }
 
@@ -267,14 +286,21 @@ public class PlayerService extends Service implements
 
     @Override
     public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
-//        if (seekBarProgress != null) {
-//            seekBarProgress.setSecondaryProgress(i);
-//        }
+        Log.e("BUFFERING UPDATE", String.valueOf(i));
+        sendBufferingUpdateBroadcast(i);
     }
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         //TODO: implement completion handler
+    }
+
+    private void sendBufferingUpdateBroadcast(int bufferingValue) {
+        Intent intent = new Intent();
+        intent.setAction(BROADCAST_BUFFERING_UPDATE_ACTION_KEY);
+        intent.putExtra(EXTRA_PODCAST_BUFFERING_VALUE_KEY, bufferingValue);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
     }
 
     private void sendUpdateBroadcast() {
@@ -300,7 +326,7 @@ public class PlayerService extends Service implements
 
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
-        int mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
+        mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
 
         Intent intent = new Intent();
         intent.setAction(BROADCAST_PLAY_ACTION_KEY);
