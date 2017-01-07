@@ -68,7 +68,7 @@ public class SyncTasksService extends GcmTaskService {
 
     private int syncPodcastsTask() {
         String url = BuildConfig.PODCAST_URL;
-        if (!url.equals("")) {
+        if (!"".equals(url)) {
             return processRss(mClient, url);
         } else {
             //TODO: implement logic for main client

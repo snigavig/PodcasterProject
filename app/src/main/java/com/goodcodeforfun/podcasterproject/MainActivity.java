@@ -236,16 +236,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_settings:
-                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-                return true;
-
-            default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item);
-
+        if (item.getItemId() == R.id.action_settings) {
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+            return true;
+        } else {
+            // If we got here, the user's action was not recognized.
+            // Invoke the superclass to handle it.
+            return super.onOptionsItemSelected(item);
         }
     }
 
@@ -355,18 +352,17 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
 
                 switch (newState) {
-
                     case BottomSheetBehavior.STATE_DRAGGING:
                         break;
-
                     case BottomSheetBehavior.STATE_COLLAPSED:
                         fabPrevious.setClickable(false);
                         fabNext.setClickable(false);
                         break;
-
                     case BottomSheetBehavior.STATE_EXPANDED:
                         fabPrevious.setClickable(true);
                         fabNext.setClickable(true);
+                        break;
+                    default:
                         break;
                 }
 
@@ -453,15 +449,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case StorageUtils.STORAGE_PERMISSIONS: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //fire pending request
-                    Log.d(TAG, "got permissions");
-                } else {
-                    //retry
-                    Log.d(TAG, "no permissions, need to retry the request");
-                }
+        if (requestCode == StorageUtils.STORAGE_PERMISSIONS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //fire pending request
+                Log.d(TAG, "got permissions");
+            } else {
+                //retry
+                Log.d(TAG, "no permissions, need to retry the request");
             }
         }
     }

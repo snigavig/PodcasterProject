@@ -10,6 +10,7 @@ import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +28,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
+    private static final String TAG = PodcastListAdapter.class.getSimpleName();
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_ITEM = 1;
     private final WeakReference<MainActivity> mActivityWeakReference;
@@ -57,17 +58,15 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == TYPE_ITEM) {
-
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.podcast_list_item_layout, parent, false);
             return new PodcastItemViewHolder(view);
         } else if (viewType == TYPE_HEADER) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.podcast_list_header, parent, false);
             return new PodcastHeaderViewHolder(view);
         }
-
-        throw new RuntimeException("there is no type that matches the type " + viewType + " + make sure your using types correctly");
+        Log.e(TAG, "there is no type that matches the type " + viewType + " + make sure your using types correctly");
+        return null;
     }
-
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
@@ -148,10 +147,10 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private class PodcastItemViewHolder extends RecyclerView.ViewHolder {
-        final TextView tv_title;
-        final ImageView podcastImageView;
-        final RelativeLayout cv_wrap;
-        final ImageButton downloadButton;
+        private final TextView tv_title;
+        private final ImageView podcastImageView;
+        private final RelativeLayout cv_wrap;
+        private final ImageButton downloadButton;
 
         PodcastItemViewHolder(View view) {
             super(view);

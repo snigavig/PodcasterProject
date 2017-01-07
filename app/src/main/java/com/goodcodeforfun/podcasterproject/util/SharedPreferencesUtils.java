@@ -12,8 +12,8 @@ public class SharedPreferencesUtils {
     public static final String LAST_STATE_KEY = "LAST_STATE";
     public static final String LAST_PODCAST_KEY = "LAST_PODCAST";
     public static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
-    private static String IS_HIDE_IMAGES_KEY;
-    private static SharedPreferences prefs;
+    private String IS_HIDE_IMAGES_KEY;
+    private SharedPreferences prefs;
 
     public SharedPreferencesUtils(Context context) {
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
