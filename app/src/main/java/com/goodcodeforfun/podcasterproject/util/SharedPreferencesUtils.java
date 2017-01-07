@@ -51,13 +51,13 @@ public class SharedPreferencesUtils {
         editor.apply();
     }
 
-    public int getLastPodcast() {
-        return prefs.getInt(LAST_PODCAST_KEY, -1);
+    public String getLastPodcast() {
+        return prefs.getString(LAST_PODCAST_KEY, "");
     }
 
-    public void setLastPodcast(int value) {
+    public void setLastPodcast(String value) {
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt(LAST_PODCAST_KEY, value);
+        editor.putString(LAST_PODCAST_KEY, value);
         editor.apply();
     }
 

@@ -14,15 +14,18 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.annotation.IntDef;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
-import com.goodcodeforfun.stateui.StateUIApplication;
 
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+
+import io.realm.Realm;
 
 public class PlayerService extends Service implements
         MediaPlayer.OnBufferingUpdateListener,
@@ -36,26 +39,21 @@ public class PlayerService extends Service implements
     public static final String UPDATE_FOREGROUND_ACTION = "PlayerService#.ACTION_UPDATE_FOREGROUND";
     public static final String START_FOREGROUND_ACTION = "PlayerService#ACTION_START_FOREGROUND";
     public static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
-    public static final String START_ACTION = "PlayerService#ACTION_START";
-    public static final String STOP_ACTION = "PlayerService#ACTION_STOP";
-    public static final String PREVIOUS_ACTION_KEY = "PlayerService#ACTION_PREVIOUS";
-    public static final String PAUSE_ACTION_KEY = "PlayerService#ACTION_PAUSE";
-    public static final String PLAY_ACTION_KEY = "PlayerService#ACTION_PLAY";
-    public static final String NEXT_ACTION_KEY = "PlayerService#ACTION_NEXT";
-    public static final String SEEK_ACTION_KEY = "PlayerService#ACTION_SEEK";
+    public static final String START_PLAY_ACTION = "PlayerService#ACTION_START";
+    public static final String STOP_PLAY_ACTION = "PlayerService#ACTION_STOP";
+    public static final String BROADCAST_PREVIOUS_ACTION_KEY = "PlayerService#ACTION_PREVIOUS";
+    public static final String BROADCAST_PAUSE_ACTION_KEY = "PlayerService#ACTION_PAUSE";
+    public static final String BROADCAST_PLAY_ACTION_KEY = "PlayerService#ACTION_PLAY";
+    public static final String BROADCAST_NEXT_ACTION_KEY = "PlayerService#ACTION_NEXT";
+    public static final String BROADCAST_SEEK_ACTION_KEY = "PlayerService#ACTION_SEEK";
+    public static final String BROADCAST_UPDATE_ACTION_KEY = "PlayerService#ACTION_UPDATE";
+    public static final String EXTRA_PODCAST_TOTAL_TIME_KEY = "EXTRA_PODCAST_TOTAL_TIME";
+    public static final String EXTRA_PODCAST_CURRENT_TIME_KEY = "EXTRA_PODCAST_CURRENT_TIME";
+    public static final String EXTRA_PODCAST_PRIMARY_KEY_KEY = "EXTRA_PODCAST_PRIMARY_KEY";
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
     private final Handler handler = new Handler();
 
-    //    private void initSeekBar() {
-//        if (seekBarProgress == null) {
-//            if (mActivityWeakReference != null) {
-//                MainActivity activity = mActivityWeakReference.get();
-//                seekBarProgress = (SeekBar) activity.findViewById(R.id.seekBarProgress);
-//                seekBarProgress.setOnSeekBarChangeListener(PodcastPlayerService.this);
-//            }
-//        }
-//    }
     private final Foreground.Listener myListener = new Foreground.Listener() {
         public void onBecameForeground() {
             //initSeekBar();
@@ -66,38 +64,25 @@ public class PlayerService extends Service implements
         }
     };
     private PowerManager.WakeLock mWakeLock;
-
-    //    private void initPodcastTime(final int millis) {
-//        if (podcastTime == null) {
-//            if (mActivityWeakReference != null) {
-//                MainActivity activity = mActivityWeakReference.get();
-//                podcastTime = (TextView) activity.findViewById(R.id.podcastLengthTextView);
-//                activity.runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        podcastTime.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d",
-//                                TimeUnit.MILLISECONDS.toHours(millis),
-//                                TimeUnit.MILLISECONDS.toMinutes(millis) -
-//                                        TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)),
-//                                TimeUnit.MILLISECONDS.toSeconds(millis) -
-//                                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
-//                    }
-//                });
-//            }
-//        }
-//    }
     private MediaPlayer mediaPlayer;
     private boolean isPaused = true;
     private String activePodcastName;
-    private int mediaFileLengthInMilliseconds;
+    //private int mediaFileLengthInMilliseconds;
 
     public PlayerService() {
     }
 
-    public static void initPlayerService(Context context, Integer id) {
-        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcast(id);
+    public static void startPlayPlayerService(Context context, String primaryKey) {
+        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcast(primaryKey);
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
-        podcastPlayerServiceIntent.setAction(START_ACTION);
+        podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, primaryKey);
+        podcastPlayerServiceIntent.setAction(START_PLAY_ACTION);
+        context.startService(podcastPlayerServiceIntent);
+    }
+
+    public static void stopPlayPlayerService(Context context) {
+        Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.setAction(STOP_PLAY_ACTION);
         context.startService(podcastPlayerServiceIntent);
     }
 
@@ -125,43 +110,30 @@ public class PlayerService extends Service implements
                 mediaPlayer.stop();
             }
             mediaPlayer.release();
-            //stopForegroundPlayerService(mActivityWeakReference.get());
+            stopForegroundPlayerService(PodcasterProjectApplication.getInstance());
             mediaPlayer = null;
         }
     }
 
-    private void prepareMediaPlayer() {
+    private void prepareMediaPlayer(String audioUrl) {
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setOnBufferingUpdateListener(this);
         mediaPlayer.setOnCompletionListener(this);
-        //PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
-
         try {
-            Podcast podcast;
-            //noinspection TryFinallyCanBeTryWithResources
-            //try {
-            //    while (cursor.moveToNext()) {
-            podcast = new Podcast();
-            activePodcastName = podcast.getTitle();
-            String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(podcast.getAudioUrl());
+            String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(audioUrl);
             File file = new File(filePath);
             String dataSource;
             if (file.isFile()) {
                 dataSource = filePath;
             } else {
-                dataSource = podcast.getAudioUrl();
+                dataSource = audioUrl;
             }
             mediaPlayer.setDataSource(dataSource);
             mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.prepareAsync();
-            //}
-//            } finally {
-//                cursor.close();
-//            }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getLocalizedMessage());
         }
-
     }
 
     @Override
@@ -173,7 +145,6 @@ public class PlayerService extends Service implements
     public void onCreate() {
         super.onCreate();
         Foreground.get(this).addListener(myListener);
-        //initSeekBar();
     }
 
     private void handleIntent(Intent intent) {
@@ -181,16 +152,39 @@ public class PlayerService extends Service implements
             startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
         } else if (UPDATE_FOREGROUND_ACTION.equals(intent.getAction())) {
             startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
-        } else if (START_ACTION.equals(intent.getAction())) {
+        } else if (START_PLAY_ACTION.equals(intent.getAction())) {
+            String primaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
+            Realm realm = Realm.getDefaultInstance();
+            Podcast podcast = realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
+            activePodcastName = podcast.getTitle();
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
             if (!mWakeLock.isHeld()) {
                 mWakeLock.acquire();
             }
+            if (null != mediaPlayer) {
+                if (isPaused) {
+                    isPaused = false;
+                    mediaPlayer.start();
+                    startForegroundPlayerService(PodcasterProjectApplication.getInstance());
+                    primaryProgressUpdater();
+                } else {
+                    if (!mediaPlayer.isPlaying()) {
+                        clearMediaPlayer();
+                        prepareMediaPlayer(podcast.getAudioUrl());
+                    }
+                }
+            } else {
+                prepareMediaPlayer(podcast.getAudioUrl());
+            }
         } else if (STOP_FOREGROUND_ACTION.equals(intent.getAction())) {
             stopForeground(true);
-        } else if (STOP_ACTION.equals(intent.getAction())) {
-            stopSelf();
+        } else if (STOP_PLAY_ACTION.equals(intent.getAction())) {
+            if (mediaPlayer != null) {
+                mediaPlayer.pause();
+                isPaused = true;
+            }
+            //stopSelf();
         }
     }
 
@@ -232,13 +226,13 @@ public class PlayerService extends Service implements
 
         builder.setPriority(Notification.PRIORITY_MAX);
 
-        final int lastPodcastId = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
+        final String lastPodcastPrimaryKey = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
 
 //        final Cursor cursorPrevious = PodcastsDBHelper.getPodcastsCursorPreviousById(this, lastPodcastId);
 //
 //        if (cursorPrevious.getCount() > 0) {
 //            Intent previousIntent = new Intent();
-//            previousIntent.setAction(ACTION.PREVIOUS_ACTION_KEY);
+//            previousIntent.setAction(ACTION.BROADCAST_PREVIOUS_ACTION_KEY);
 //            PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 12345, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 //            builder.addAction(R.drawable.ic_skip_previous_24dp, "", pendingIntentPrevious);
 //        }
@@ -247,13 +241,13 @@ public class PlayerService extends Service implements
         Intent playPauseIntent = new Intent();
 
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PLAYING) {
-            playPauseIntent.setAction(PAUSE_ACTION_KEY);
+            playPauseIntent.setAction(BROADCAST_PAUSE_ACTION_KEY);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_pause_24dp, "", pendingIntentPlayPause);
         } else if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == STOPPED) {
             //TODO: implement stopped state
         } else {
-            playPauseIntent.setAction(PLAY_ACTION_KEY);
+            playPauseIntent.setAction(BROADCAST_PLAY_ACTION_KEY);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_play_arrow_24dp, "", pendingIntentPlayPause);
         }
@@ -262,7 +256,7 @@ public class PlayerService extends Service implements
 //
 //        if (cursorNext.getCount() > 0) {
 //            Intent nextIntent = new Intent();
-//            nextIntent.setAction(ACTION.NEXT_ACTION_KEY);
+//            nextIntent.setAction(ACTION.BROADCAST_NEXT_ACTION_KEY);
 //            PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 12345, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 //            builder.addAction(R.drawable.ic_skip_next_24dp, "", pendingIntentNext);
 //        }
@@ -280,31 +274,43 @@ public class PlayerService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
+        //TODO: implement completion handler
+    }
 
-
+    private void sendUpdateBroadcast() {
+        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcastTime(mediaPlayer.getCurrentPosition());
+        Intent intent = new Intent();
+        intent.setAction(BROADCAST_UPDATE_ACTION_KEY);
+        intent.putExtra(EXTRA_PODCAST_CURRENT_TIME_KEY, mediaPlayer.getCurrentPosition());
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
     }
 
     private void primaryProgressUpdater() {
-//        if (seekBarProgress != null) {
-//            seekBarProgress.setProgress((int) (((float) mediaPlayer.getCurrentPosition() / mediaFileLengthInMilliseconds) * 100));
-//        }
-//        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcastTime(mediaPlayer.getCurrentPosition());
-//        if (mediaPlayer.isPlaying()) {
-//            Runnable notification = new Runnable() {
-//                public void run() {
-//                    primaryProgressUpdater();
-//                }
-//            };
-//            handler.postDelayed(notification, 1000);
-//        }
+        if (mediaPlayer.isPlaying()) {
+            sendUpdateBroadcast();
+            Runnable notification = new Runnable() {
+                public void run() {
+                    primaryProgressUpdater();
+                }
+            };
+            handler.postDelayed(notification, 1000);
+        }
     }
 
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
-        mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
-        //initPodcastTime(mediaFileLengthInMilliseconds);
+        int mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
+
+        Intent intent = new Intent();
+        intent.setAction(BROADCAST_PLAY_ACTION_KEY);
+        intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
+
         mediaPlayer.start();
-        startForegroundPlayerService(StateUIApplication.getContext());
+        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
         isPaused = false;
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
         primaryProgressUpdater();
