@@ -43,6 +43,11 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.goodcodeforfun.podcasterproject.MainActivity" />
         </activity>
+
+        <service
+            android:name=".PlayerService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>
