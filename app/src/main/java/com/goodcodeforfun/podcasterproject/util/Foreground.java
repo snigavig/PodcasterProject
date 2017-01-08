@@ -47,12 +47,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class Foreground implements Application.ActivityLifecycleCallbacks {
 
-    public static final long CHECK_DELAY = 500;
-    public static final String TAG = Foreground.class.getName();
+    private static final long CHECK_DELAY = 500;
+    private static final String TAG = Foreground.class.getName();
     private static Foreground instance;
+    private final Handler handler = new Handler();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private boolean foreground = false, paused = true;
-    private Handler handler = new Handler();
-    private List<Listener> listeners = new CopyOnWriteArrayList<Listener>();
     private Runnable check;
 
     /**
@@ -169,22 +169,27 @@ public class Foreground implements Application.ActivityLifecycleCallbacks {
 
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+        // This is intentionally empty
     }
 
     @Override
     public void onActivityStarted(Activity activity) {
+        // This is intentionally empty
     }
 
     @Override
     public void onActivityStopped(Activity activity) {
+        // This is intentionally empty
     }
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+        // This is intentionally empty
     }
 
     @Override
     public void onActivityDestroyed(Activity activity) {
+        // This is intentionally empty
     }
 
     public interface Listener {

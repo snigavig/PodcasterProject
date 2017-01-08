@@ -9,11 +9,11 @@ import com.goodcodeforfun.podcasterproject.PlayerService;
 import com.goodcodeforfun.podcasterproject.R;
 
 public class SharedPreferencesUtils {
-    public static final String LAST_STATE_KEY = "LAST_STATE";
-    public static final String LAST_PODCAST_KEY = "LAST_PODCAST";
-    public static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
-    private String IS_HIDE_IMAGES_KEY;
-    private SharedPreferences prefs;
+    private static final String LAST_STATE_KEY = "LAST_STATE";
+    private static final String LAST_PODCAST_KEY = "LAST_PODCAST";
+    private static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
+    private final String IS_HIDE_IMAGES_KEY;
+    private final SharedPreferences prefs;
 
     public SharedPreferencesUtils(Context context) {
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
@@ -42,7 +42,7 @@ public class SharedPreferencesUtils {
 
 
     public int getLastState() {
-        return prefs.getInt(LAST_STATE_KEY, PlayerService.STOPPED);
+        return prefs.getInt(LAST_STATE_KEY, PlayerService.PAUSED);
     }
 
     public void setLastState(@PlayerService.PlayerState int value) {

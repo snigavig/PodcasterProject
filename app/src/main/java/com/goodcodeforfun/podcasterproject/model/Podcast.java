@@ -26,8 +26,6 @@ public class Podcast extends RealmObject {
         return audioUrl;
     }
 
-    ;
-
     public Date getDate() {
         return date;
     }

@@ -32,6 +32,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
@@ -49,12 +51,12 @@ import io.realm.Realm;
 import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_BUFFERING_UPDATE_ACTION_KEY;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_ACTION_KEY;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PAUSE_ACTION_KEY;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION_KEY;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION_KEY;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_UPDATE_ACTION_KEY;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_BUFFERING_UPDATE_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PAUSE_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_UPDATE_ACTION;
 
 public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
@@ -63,7 +65,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private static final int RC_PLAY_SERVICES = 123;
     private static int index = -1;
     private static int top = -1;
-    //private AppCompatTextView marqueueTitle;
     private FloatingActionButton fabPlayPause;
     private FloatingActionButton fabPrevious;
     private FloatingActionButton fabNext;
@@ -71,18 +72,11 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private AppBarLayout mActionBar;
     private AppCompatSeekBar seekBarProgress;
     private RecyclerView podcastsRecyclerView;
-    //private AppCompatImageView podcastBigImageView;
     private AppCompatTextView podcastCurrentTime;
     private LinearLayoutManager mLayoutManager;
     private Podcast currentPodcast;
     private PodcastListAdapter mAdapter;
-    private AppCompatTextView podcastTime;
-    private DisplayMetrics displayMetrics;
-    private float dpScreenWidth;
-    private int shadowHeight;
-    private int actionBarStabSize;
-
-    private BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(SyncTasksService.ACTION_DONE)) {
@@ -97,46 +91,47 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             }
         }
     };
-
-    private BroadcastReceiver mPlayerStatusReceiver = new BroadcastReceiver() {
+    private AppCompatTextView podcastTime;
+    private final BroadcastReceiver mPlayerStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             int mediaFileLengthInMilliseconds;
             switch (intent.getAction()) {
-                case BROADCAST_PLAY_ACTION_KEY:
+                case BROADCAST_PLAY_ACTION:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     if (mediaFileLengthInMilliseconds != -1) {
                         initPodcastTime(mediaFileLengthInMilliseconds);
                     }
                     break;
-                case BROADCAST_PAUSE_ACTION_KEY:
+                case BROADCAST_PAUSE_ACTION:
                     break;
-                case BROADCAST_NEXT_ACTION_KEY:
+                case BROADCAST_NEXT_ACTION:
                     break;
-                case BROADCAST_PREVIOUS_ACTION_KEY:
+                case BROADCAST_PREVIOUS_ACTION:
                     break;
-                case BROADCAST_BUFFERING_UPDATE_ACTION_KEY:
+                case BROADCAST_BUFFERING_UPDATE_ACTION:
                     int bufferingValue = intent.getIntExtra(PlayerService.EXTRA_PODCAST_BUFFERING_VALUE_KEY, -1);
                     Log.e("BUFFERING", String.valueOf(bufferingValue));
                     if (seekBarProgress != null && bufferingValue != -1) {
                         seekBarProgress.setSecondaryProgress(bufferingValue);
                     }
                     break;
-                case BROADCAST_UPDATE_ACTION_KEY:
+                case BROADCAST_UPDATE_ACTION:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     int currentTime = intent.getIntExtra(PlayerService.EXTRA_PODCAST_CURRENT_TIME_KEY, -1);
-                    if (mediaFileLengthInMilliseconds != -1 && currentTime != -1) {
-                        if (seekBarProgress != null) {
-                            seekBarProgress.setProgress((int) (((float) currentTime / mediaFileLengthInMilliseconds) * 100));
-                        }
+                    if (seekBarProgress != null && mediaFileLengthInMilliseconds != -1 && currentTime != -1) {
+                        seekBarProgress.setProgress((int) (((float) currentTime / mediaFileLengthInMilliseconds) * 100));
                     }
                     break;
                 default:
                     break;
-
             }
         }
     };
+    private DisplayMetrics displayMetrics;
+    private float dpScreenWidth;
+    private int shadowHeight;
+    private int actionBarStabSize;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +142,30 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         prepareUI();
         checkPlayServicesAvailable();
         populateUI();
+        if (fabPlayPause.getId() == R.id.play_pause_button &&
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() !=
+                        PlayerService.PAUSED) {
+            new MaterialDialog.Builder(this)
+                    .title(R.string.restore_confirmation_dialog_title)
+                    .content(R.string.restore_confirmation_dialog_content)
+                    .positiveColor(ContextCompat.getColor(MainActivity.this, R.color.textColor))
+                    .negativeColor(ContextCompat.getColor(MainActivity.this, R.color.textColor))
+                    .positiveText(R.string.restore_confirmation_dialog_positive_text)
+                    .negativeText(R.string.restore_confirmation_dialog_negative_text)
+                    .onPositive(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            startMediaPlayback(true);
+                        }
+                    })
+                    .onNegative(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+        }
     }
 
     private void prepareUIMetrics() {
@@ -207,11 +226,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         syncStateFilter.addAction(SyncTasksService.ACTION_DONE);
 
         IntentFilter playerStateFilter = new IntentFilter();
-        playerStateFilter.addAction(BROADCAST_PLAY_ACTION_KEY);
-        playerStateFilter.addAction(BROADCAST_PAUSE_ACTION_KEY);
-        playerStateFilter.addAction(BROADCAST_NEXT_ACTION_KEY);
-        playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION_KEY);
-        playerStateFilter.addAction(BROADCAST_BUFFERING_UPDATE_ACTION_KEY);
+        playerStateFilter.addAction(BROADCAST_PLAY_ACTION);
+        playerStateFilter.addAction(BROADCAST_PAUSE_ACTION);
+        playerStateFilter.addAction(BROADCAST_NEXT_ACTION);
+        playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION);
+        playerStateFilter.addAction(BROADCAST_UPDATE_ACTION);
+        playerStateFilter.addAction(BROADCAST_BUFFERING_UPDATE_ACTION);
 
         manager.registerReceiver(mSyncStatusReceiver, syncStateFilter);
         manager.registerReceiver(mPlayerStatusReceiver, playerStateFilter);
@@ -403,12 +423,19 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                 PlayerService.stopMediaPlayback(MainActivity.this);
                 fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_24dp));
             } else {
-                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PLAYING);
-                PlayerService.startMediaPlayback(MainActivity.this, currentPodcast.getPrimaryKey());
-                fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
+                startMediaPlayback(false);
             }
         }
     }
+
+    private void startMediaPlayback(boolean isRestore /*should restore previous state*/) {
+        if (fabPlayPause != null && currentPodcast != null) {
+            PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PLAYING);
+            PlayerService.startMediaPlayback(MainActivity.this, currentPodcast.getPrimaryKey(), isRestore);
+            fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
+        }
+    }
+
 
     private void prepareUI() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -462,12 +489,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-
+        // This is intentionally empty, because we only care about the final destination
     }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
+        // This is intentionally empty, because we only care about the final destination
     }
 
     @Override

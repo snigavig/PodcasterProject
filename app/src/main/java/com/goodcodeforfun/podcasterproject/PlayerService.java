@@ -34,25 +34,25 @@ public class PlayerService extends Service implements
 
     public static final int PLAYING = 0;
     public static final int PAUSED = 1;
-    public static final int STOPPED = 2;
-    public static final String MAIN_ACTION = "PlayerService#ACTION_MAIN";
-    public static final String UPDATE_FOREGROUND_ACTION = "PlayerService#.ACTION_UPDATE_FOREGROUND";
-    public static final String START_FOREGROUND_ACTION = "PlayerService#ACTION_START_FOREGROUND";
-    public static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
-    public static final String START_PLAY_ACTION = "PlayerService#ACTION_START";
-    public static final String STOP_PLAY_ACTION = "PlayerService#ACTION_STOP";
-    public static final String SEEK_ACTION_KEY = "PlayerService#ACTION_SEEK";
-    public static final String BROADCAST_PREVIOUS_ACTION_KEY = "PlayerService#ACTION_PREVIOUS";
-    public static final String BROADCAST_PAUSE_ACTION_KEY = "PlayerService#ACTION_PAUSE";
-    public static final String BROADCAST_PLAY_ACTION_KEY = "PlayerService#ACTION_PLAY";
-    public static final String BROADCAST_NEXT_ACTION_KEY = "PlayerService#ACTION_NEXT";
-    public static final String BROADCAST_UPDATE_ACTION_KEY = "PlayerService#ACTION_UPDATE";
-    public static final String BROADCAST_BUFFERING_UPDATE_ACTION_KEY = "PlayerService#ACTION_BUFFERING_UPDATE";
+    public static final String BROADCAST_PREVIOUS_ACTION = "PlayerService#ACTION_PREVIOUS";
+    public static final String BROADCAST_PAUSE_ACTION = "PlayerService#ACTION_PAUSE";
+    public static final String BROADCAST_PLAY_ACTION = "PlayerService#ACTION_PLAY";
+    public static final String BROADCAST_NEXT_ACTION = "PlayerService#ACTION_NEXT";
+    public static final String BROADCAST_UPDATE_ACTION = "PlayerService#ACTION_UPDATE";
+    public static final String BROADCAST_BUFFERING_UPDATE_ACTION = "PlayerService#ACTION_BUFFERING_UPDATE";
     public static final String EXTRA_PODCAST_TOTAL_TIME_KEY = "EXTRA_PODCAST_TOTAL_TIME";
     public static final String EXTRA_PODCAST_CURRENT_TIME_KEY = "EXTRA_PODCAST_CURRENT_TIME";
-    public static final String EXTRA_PODCAST_PRIMARY_KEY_KEY = "EXTRA_PODCAST_PRIMARY_KEY";
     public static final String EXTRA_PODCAST_BUFFERING_VALUE_KEY = "EXTRA_PODCAST_BUFFERING_VALUE";
-    public static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
+    private static final String MAIN_ACTION = "PlayerService#ACTION_MAIN";
+    private static final String UPDATE_FOREGROUND_ACTION = "PlayerService#.ACTION_UPDATE_FOREGROUND";
+    private static final String START_FOREGROUND_ACTION = "PlayerService#ACTION_START_FOREGROUND";
+    private static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
+    private static final String START_PLAY_ACTION = "PlayerService#ACTION_START";
+    private static final String STOP_PLAY_ACTION = "PlayerService#ACTION_STOP";
+    private static final String SEEK_ACTION = "PlayerService#ACTION_SEEK";
+    private static final String EXTRA_PODCAST_PRIMARY_KEY_KEY = "EXTRA_PODCAST_PRIMARY_KEY";
+    private static final String EXTRA_PODCAST_IS_RESTORE_KEY = "EXTRA_PODCAST_IS_RESTORE";
+    private static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
     private final Handler handler = new Handler();
@@ -65,19 +65,22 @@ public class PlayerService extends Service implements
             //seekBarProgress = null;
         }
     };
+    private int updateCount = 0;
     private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
     private boolean isPaused = true;
+    private boolean isRestore = false;
     private String activePodcastName;
 
     public PlayerService() {
     }
 
-    public static void startMediaPlayback(Context context, String primaryKey) {
+    public static void startMediaPlayback(Context context, String primaryKey, boolean isRestore) {
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcast(primaryKey);
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
         podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, primaryKey);
+        podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_IS_RESTORE_KEY, isRestore);
         podcastPlayerServiceIntent.setAction(START_PLAY_ACTION);
         context.startService(podcastPlayerServiceIntent);
     }
@@ -85,7 +88,7 @@ public class PlayerService extends Service implements
     public static void seekMedia(Context context, int progress) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
         podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, progress);
-        podcastPlayerServiceIntent.setAction(SEEK_ACTION_KEY);
+        podcastPlayerServiceIntent.setAction(SEEK_ACTION);
         context.startService(podcastPlayerServiceIntent);
     }
 
@@ -157,50 +160,59 @@ public class PlayerService extends Service implements
     }
 
     private void handleIntent(Intent intent) {
-        if (START_FOREGROUND_ACTION.equals(intent.getAction())) {
-            startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
-        } else if (UPDATE_FOREGROUND_ACTION.equals(intent.getAction())) {
-            startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
-        } else if (SEEK_ACTION_KEY.equals(intent.getAction())) {
-            int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
-            Log.e("Got progress", String.valueOf(progress));
-            if (mediaPlayer.isPlaying() && progress != -1) {
-                int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
-                mediaPlayer.seekTo(playPositionInMilliseconds);
-            }
-        } else if (START_PLAY_ACTION.equals(intent.getAction())) {
-            String primaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
-            Realm realm = Realm.getDefaultInstance();
-            Podcast podcast = realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
-            activePodcastName = podcast.getTitle();
-            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
-            if (!mWakeLock.isHeld()) {
-                mWakeLock.acquire();
-            }
-            if (null != mediaPlayer) {
-                if (isPaused) {
-                    isPaused = false;
-                    mediaPlayer.start();
-                    startForegroundPlayerService(PodcasterProjectApplication.getInstance());
-                    primaryProgressUpdater();
-                } else {
-                    if (!mediaPlayer.isPlaying()) {
-                        clearMediaPlayer();
-                        prepareMediaPlayer(podcast.getAudioUrl());
-                    }
+        switch (intent.getAction()) {
+            case START_FOREGROUND_ACTION:
+                startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
+                break;
+            case STOP_FOREGROUND_ACTION:
+                stopForeground(true);
+                break;
+            case UPDATE_FOREGROUND_ACTION:
+                startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
+                break;
+            case SEEK_ACTION:
+                int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
+                if (progress != -1) {
+                    int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
+                    mediaPlayer.seekTo(playPositionInMilliseconds);
                 }
-            } else {
-                prepareMediaPlayer(podcast.getAudioUrl());
-            }
-        } else if (STOP_FOREGROUND_ACTION.equals(intent.getAction())) {
-            stopForeground(true);
-        } else if (STOP_PLAY_ACTION.equals(intent.getAction())) {
-            if (mediaPlayer != null) {
-                mediaPlayer.pause();
-                isPaused = true;
-            }
-            //stopSelf();
+                break;
+            case START_PLAY_ACTION:
+                String primaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
+                isRestore = intent.getBooleanExtra(EXTRA_PODCAST_IS_RESTORE_KEY, false);
+                Realm realm = Realm.getDefaultInstance();
+                Podcast podcast = realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
+                activePodcastName = podcast.getTitle();
+                PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
+                if (!mWakeLock.isHeld()) {
+                    mWakeLock.acquire();
+                }
+                if (null != mediaPlayer) {
+                    if (isPaused) {
+                        isPaused = false;
+                        mediaPlayer.start();
+                        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
+                        primaryProgressUpdater();
+                    } else {
+                        if (!mediaPlayer.isPlaying()) {
+                            clearMediaPlayer();
+                            prepareMediaPlayer(podcast.getAudioUrl());
+                        }
+                    }
+                } else {
+                    prepareMediaPlayer(podcast.getAudioUrl());
+                }
+                break;
+            case STOP_PLAY_ACTION:
+                if (mediaPlayer != null) {
+                    mediaPlayer.pause();
+                    isPaused = true;
+                }
+                //stopSelf();
+                break;
+            default:
+                break;
         }
     }
 
@@ -251,7 +263,7 @@ public class PlayerService extends Service implements
 //
 //        if (cursorPrevious.getCount() > 0) {
 //            Intent previousIntent = new Intent();
-//            previousIntent.setAction(ACTION.BROADCAST_PREVIOUS_ACTION_KEY);
+//            previousIntent.setAction(ACTION.BROADCAST_PREVIOUS_ACTION);
 //            PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 12345, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 //            builder.addAction(R.drawable.ic_skip_previous_24dp, "", pendingIntentPrevious);
 //        }
@@ -260,13 +272,11 @@ public class PlayerService extends Service implements
         Intent playPauseIntent = new Intent();
 
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PLAYING) {
-            playPauseIntent.setAction(BROADCAST_PAUSE_ACTION_KEY);
+            playPauseIntent.setAction(BROADCAST_PAUSE_ACTION);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_pause_24dp, "", pendingIntentPlayPause);
-        } else if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == STOPPED) {
-            //TODO: implement stopped state
         } else {
-            playPauseIntent.setAction(BROADCAST_PLAY_ACTION_KEY);
+            playPauseIntent.setAction(BROADCAST_PLAY_ACTION);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_play_arrow_24dp, "", pendingIntentPlayPause);
         }
@@ -275,7 +285,7 @@ public class PlayerService extends Service implements
 //
 //        if (cursorNext.getCount() > 0) {
 //            Intent nextIntent = new Intent();
-//            nextIntent.setAction(ACTION.BROADCAST_NEXT_ACTION_KEY);
+//            nextIntent.setAction(ACTION.BROADCAST_NEXT_ACTION);
 //            PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 12345, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 //            builder.addAction(R.drawable.ic_skip_next_24dp, "", pendingIntentNext);
 //        }
@@ -297,16 +307,15 @@ public class PlayerService extends Service implements
 
     private void sendBufferingUpdateBroadcast(int bufferingValue) {
         Intent intent = new Intent();
-        intent.setAction(BROADCAST_BUFFERING_UPDATE_ACTION_KEY);
+        intent.setAction(BROADCAST_BUFFERING_UPDATE_ACTION);
         intent.putExtra(EXTRA_PODCAST_BUFFERING_VALUE_KEY, bufferingValue);
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
     }
 
     private void sendUpdateBroadcast() {
-        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcastTime(mediaPlayer.getCurrentPosition());
         Intent intent = new Intent();
-        intent.setAction(BROADCAST_UPDATE_ACTION_KEY);
+        intent.setAction(BROADCAST_UPDATE_ACTION);
         intent.putExtra(EXTRA_PODCAST_CURRENT_TIME_KEY, mediaPlayer.getCurrentPosition());
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
@@ -314,6 +323,13 @@ public class PlayerService extends Service implements
 
     private void primaryProgressUpdater() {
         if (mediaPlayer.isPlaying()) {
+            //save current time every 5 seconds.
+            if (updateCount >= 5) {
+                updateCount = 0;
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcastTime(mediaPlayer.getCurrentPosition());
+            } else {
+                updateCount++;
+            }
             sendUpdateBroadcast();
             Runnable notification = new Runnable() {
                 public void run() {
@@ -329,11 +345,19 @@ public class PlayerService extends Service implements
         mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
 
         Intent intent = new Intent();
-        intent.setAction(BROADCAST_PLAY_ACTION_KEY);
+        intent.setAction(BROADCAST_PLAY_ACTION);
         intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
 
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
+
+        if (isRestore) {
+            isRestore = false;
+            int lastPodcastTime = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcastTime();
+            if (lastPodcastTime != -1) {
+                mediaPlayer.seekTo(lastPodcastTime);
+            }
+        }
 
         mediaPlayer.start();
         startForegroundPlayerService(PodcasterProjectApplication.getInstance());

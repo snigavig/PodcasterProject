@@ -36,4 +36,8 @@
     <string name="pref_title_system_sync_settings">System sync settings</string>
 
     <string name="action_settings">Settings</string>
+    <string name="restore_confirmation_dialog_negative_text">Nope</string>
+    <string name="restore_confirmation_dialog_positive_text">Yes</string>
+    <string name="restore_confirmation_dialog_content">Your last session was interrupted, do you want to proceed from the last position?</string>
+    <string name="restore_confirmation_dialog_title">Session interrupted</string>
 </resources>

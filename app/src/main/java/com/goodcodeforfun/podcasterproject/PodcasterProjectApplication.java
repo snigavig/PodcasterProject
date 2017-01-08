@@ -50,7 +50,7 @@ public class PodcasterProjectApplication extends StateUIApplication {
         return mSharedPreferencesUtils;
     }
 
-    public void startSyncPodcastsTask() {
+    private void startSyncPodcastsTask() {
         Log.d(TAG, "startSyncPodcastsTask");
         PeriodicTask task = new PeriodicTask.Builder()
                 .setService(SyncTasksService.class)

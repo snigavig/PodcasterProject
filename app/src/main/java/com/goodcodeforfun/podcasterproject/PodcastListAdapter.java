@@ -79,7 +79,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             viewHolder.cv_wrap.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
+                    //TODO: implement switching to another podcast
                 }
             });
 
