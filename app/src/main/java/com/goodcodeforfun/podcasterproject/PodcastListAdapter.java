@@ -73,13 +73,14 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (!isPositionHeader(position)) {
             PodcastItemViewHolder viewHolder = (PodcastItemViewHolder) holder;
             final Podcast podcast = getItem(position);
-            String question = podcast.getTitle();
-            viewHolder.tv_title.setText(question);
+            String title = podcast.getTitle();
+            viewHolder.tv_title.setText(title);
             final MainActivity activity = mActivityWeakReference.get();
             viewHolder.cv_wrap.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    //TODO: implement switching to another podcast
+                    PlayerService.stopMediaPlayback(activity);
+                    PlayerService.startMediaPlayback(activity, podcast.getPrimaryKey(), false /*should restore previous state*/);
                 }
             });
 

@@ -56,7 +56,7 @@ import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_A
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PAUSE_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_UPDATE_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PROGRESS_UPDATE_ACTION;
 
 public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
@@ -92,6 +92,10 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         }
     };
     private AppCompatTextView podcastTime;
+    private DisplayMetrics displayMetrics;
+    private float dpScreenWidth;
+    private int shadowHeight;
+    private int actionBarStabSize;
     private final BroadcastReceiver mPlayerStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -99,8 +103,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             switch (intent.getAction()) {
                 case BROADCAST_PLAY_ACTION:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
+                    String primaryKey = intent.getStringExtra(PlayerService.EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY);
+                    Realm realm = Realm.getDefaultInstance();
+                    currentPodcast = realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
+
                     if (mediaFileLengthInMilliseconds != -1) {
                         initPodcastTime(mediaFileLengthInMilliseconds);
+                        initDetailsPanel();
                     }
                     break;
                 case BROADCAST_PAUSE_ACTION:
@@ -116,7 +125,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         seekBarProgress.setSecondaryProgress(bufferingValue);
                     }
                     break;
-                case BROADCAST_UPDATE_ACTION:
+                case BROADCAST_PROGRESS_UPDATE_ACTION:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     int currentTime = intent.getIntExtra(PlayerService.EXTRA_PODCAST_CURRENT_TIME_KEY, -1);
                     if (seekBarProgress != null && mediaFileLengthInMilliseconds != -1 && currentTime != -1) {
@@ -128,10 +137,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             }
         }
     };
-    private DisplayMetrics displayMetrics;
-    private float dpScreenWidth;
-    private int shadowHeight;
-    private int actionBarStabSize;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,8 +153,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             new MaterialDialog.Builder(this)
                     .title(R.string.restore_confirmation_dialog_title)
                     .content(R.string.restore_confirmation_dialog_content)
-                    .positiveColor(ContextCompat.getColor(MainActivity.this, R.color.textColor))
-                    .negativeColor(ContextCompat.getColor(MainActivity.this, R.color.textColor))
                     .positiveText(R.string.restore_confirmation_dialog_positive_text)
                     .negativeText(R.string.restore_confirmation_dialog_negative_text)
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
@@ -206,6 +209,30 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             currentPodcast = podcastList.get(0);
             initDetailsPanel();
         }
+
+//        if (getCount() > 0) {
+//            fabNext.setVisibility(View.VISIBLE);
+//            fabNext.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View view) {
+//                    //TODO: implement next action
+//                }
+//            });
+//        } else {
+//            fabNext.setVisibility(View.INVISIBLE);
+//        }
+//
+//        if (getCount() > 0) {
+//            fabPrevious.setVisibility(View.VISIBLE);
+//            fabPrevious.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View view) {
+//                    //TODO: implement prev action
+//                }
+//            });
+//        } else {
+//            fabPrevious.setVisibility(View.INVISIBLE);
+//        }
     }
 
     @Override
@@ -230,7 +257,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         playerStateFilter.addAction(BROADCAST_PAUSE_ACTION);
         playerStateFilter.addAction(BROADCAST_NEXT_ACTION);
         playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION);
-        playerStateFilter.addAction(BROADCAST_UPDATE_ACTION);
+        playerStateFilter.addAction(BROADCAST_PROGRESS_UPDATE_ACTION);
         playerStateFilter.addAction(BROADCAST_BUFFERING_UPDATE_ACTION);
 
         manager.registerReceiver(mSyncStatusReceiver, syncStateFilter);
@@ -420,7 +447,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         if (view.getId() == R.id.play_pause_button) {
             if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PlayerService.PLAYING) {
                 PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
-                PlayerService.stopMediaPlayback(MainActivity.this);
+                PlayerService.pauseMediaPlayback(MainActivity.this);
                 fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_play_arrow_24dp));
             } else {
                 startMediaPlayback(false);
@@ -435,7 +462,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             fabPlayPause.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
         }
     }
-
 
     private void prepareUI() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -452,7 +478,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
         final View actionBarStabView = findViewById(R.id.action_bar_stab_view);
         growAnimation = AnimationUtils.loadAnimation(this, R.anim.simple_grow);
-
 
         podcastsRecyclerView = (RecyclerView) findViewById(R.id.podcast_track_list);
         podcastsRecyclerView.setHasFixedSize(true);
