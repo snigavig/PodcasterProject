@@ -52,6 +52,8 @@ public class PlayerService extends Service implements
     private static final String PAUSE_PLAY_ACTION = "PlayerService#ACTION_PAUSE";
     private static final String STOP_PLAY_ACTION = "PlayerService#ACTION_STOP";
     private static final String SEEK_ACTION = "PlayerService#ACTION_SEEK";
+    private static final String NEXT_ACTION = "PlayerService#ACTION_NEXT";
+    private static final String PREVIOUS_ACTION = "PlayerService#ACTION_PREV";
     private static final String EXTRA_PODCAST_PRIMARY_KEY_KEY = "EXTRA_PODCAST_PRIMARY_KEY";
     private static final String EXTRA_PODCAST_IS_RESTORE_KEY = "EXTRA_PODCAST_IS_RESTORE";
     private static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
@@ -86,8 +88,17 @@ public class PlayerService extends Service implements
     }
 
     public static void nextMedia(Context context) {
-
+        Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.setAction(NEXT_ACTION);
+        context.startService(podcastPlayerServiceIntent);
     }
+
+    public static void previousMedia(Context context) {
+        Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.setAction(PREVIOUS_ACTION);
+        context.startService(podcastPlayerServiceIntent);
+    }
+
 
     public static void seekMedia(Context context, int progress) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
@@ -315,7 +326,7 @@ public class PlayerService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
-        //TODO: implement completion handler
+        nextMedia(this);
     }
 
     private void sendBufferingUpdateBroadcast(int bufferingValue) {
@@ -329,6 +340,7 @@ public class PlayerService extends Service implements
     private void sendUpdateBroadcast() {
         Intent intent = new Intent();
         intent.setAction(BROADCAST_PROGRESS_UPDATE_ACTION);
+        intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
         intent.putExtra(EXTRA_PODCAST_CURRENT_TIME_KEY, mediaPlayer.getCurrentPosition());
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);

@@ -163,7 +163,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private class PodcastHeaderViewHolder extends RecyclerView.ViewHolder {
-        final ImageView podcastImageView;
+        private final ImageView podcastImageView;
 
         PodcastHeaderViewHolder(View view) {
             super(view);

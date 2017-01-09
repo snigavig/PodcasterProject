@@ -128,6 +128,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                 case BROADCAST_PROGRESS_UPDATE_ACTION:
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     int currentTime = intent.getIntExtra(PlayerService.EXTRA_PODCAST_CURRENT_TIME_KEY, -1);
+                    podcastCurrentTime.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                            TimeUnit.MILLISECONDS.toHours(currentTime),
+                            TimeUnit.MILLISECONDS.toMinutes(currentTime) -
+                                    TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(currentTime)),
+                            TimeUnit.MILLISECONDS.toSeconds(currentTime) -
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentTime))));
                     if (seekBarProgress != null && mediaFileLengthInMilliseconds != -1 && currentTime != -1) {
                         seekBarProgress.setProgress((int) (((float) currentTime / mediaFileLengthInMilliseconds) * 100));
                     }
@@ -215,7 +221,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 //            fabNext.setOnClickListener(new View.OnClickListener() {
 //                @Override
 //                public void onClick(View view) {
-//                    //TODO: implement next action
+//                      PlayerService.nextMedia(this);
 //                }
 //            });
 //        } else {
@@ -227,7 +233,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 //            fabPrevious.setOnClickListener(new View.OnClickListener() {
 //                @Override
 //                public void onClick(View view) {
-//                    //TODO: implement prev action
+//                      PlayerService.previousMedia(this);
 //                }
 //            });
 //        } else {
