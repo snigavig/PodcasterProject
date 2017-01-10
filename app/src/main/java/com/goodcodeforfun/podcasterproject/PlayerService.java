@@ -35,7 +35,7 @@ public class PlayerService extends Service implements
     public static final int PLAYING = 0;
     public static final int PAUSED = 1;
     public static final String BROADCAST_PREVIOUS_ACTION = "PlayerService#ACTION_PREVIOUS";
-    public static final String BROADCAST_PAUSE_ACTION = "PlayerService#ACTION_PAUSE";
+    public static final String BROADCAST_SUSUPEND_ACTION = "PlayerService#ACTION_STOP";
     public static final String BROADCAST_PLAY_ACTION = "PlayerService#ACTION_PLAY";
     public static final String BROADCAST_NEXT_ACTION = "PlayerService#ACTION_NEXT";
     public static final String BROADCAST_PROGRESS_UPDATE_ACTION = "PlayerService#ACTION_PROGRESS_UPDATE";
@@ -143,6 +143,7 @@ public class PlayerService extends Service implements
             if (mediaPlayer.isPlaying() || isPaused) {
                 isPaused = false;
                 mediaPlayer.stop();
+                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
             }
             mediaPlayer.reset();
             mediaPlayer = null;
@@ -197,7 +198,11 @@ public class PlayerService extends Service implements
                 if (progress != -1) {
                     int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
                     mediaPlayer.seekTo(playPositionInMilliseconds);
+                    sendUpdateBroadcast();
                 }
+                break;
+            case NEXT_ACTION:
+                pauseMediaPlayback(this);
                 break;
             case START_PLAY_ACTION:
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
@@ -215,6 +220,8 @@ public class PlayerService extends Service implements
                         isPaused = false;
                         mediaPlayer.start();
                         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
+                        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
+                        sendPlayBroadcast();
                         primaryProgressUpdater();
                     } else {
                         if (!mediaPlayer.isPlaying()) {
@@ -230,10 +237,13 @@ public class PlayerService extends Service implements
                 if (mediaPlayer != null) {
                     mediaPlayer.pause();
                     isPaused = true;
+                    PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
                 }
+                sendSusupendBroadcast();
                 break;
             case STOP_PLAY_ACTION:
                 clearMediaPlayer();
+                sendSusupendBroadcast();
                 break;
             default:
                 break;
@@ -296,7 +306,7 @@ public class PlayerService extends Service implements
         Intent playPauseIntent = new Intent();
 
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PLAYING) {
-            playPauseIntent.setAction(BROADCAST_PAUSE_ACTION);
+            playPauseIntent.setAction(BROADCAST_SUSUPEND_ACTION);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_pause_24dp, "", pendingIntentPlayPause);
         } else {
@@ -320,7 +330,6 @@ public class PlayerService extends Service implements
 
     @Override
     public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
-        Log.e("BUFFERING UPDATE", String.valueOf(i));
         sendBufferingUpdateBroadcast(i);
     }
 
@@ -351,6 +360,13 @@ public class PlayerService extends Service implements
         intent.setAction(BROADCAST_PLAY_ACTION);
         intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
         intent.putExtra(EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY, activePodcastPrimaryKey);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
+    }
+
+    private void sendSusupendBroadcast() {
+        Intent intent = new Intent();
+        intent.setAction(BROADCAST_SUSUPEND_ACTION);
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
     }
