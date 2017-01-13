@@ -8,12 +8,12 @@ import com.einmalfel.earl.EarlParser;
 import com.einmalfel.earl.Enclosure;
 import com.einmalfel.earl.Feed;
 import com.einmalfel.earl.Item;
+import com.firebase.jobdispatcher.JobParameters;
+import com.firebase.jobdispatcher.JobService;
+import com.firebase.jobdispatcher.SimpleJobService;
 import com.goodcodeforfun.podcasterproject.BuildConfig;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.stateui.StateUIApplication;
-import com.google.android.gms.gcm.GcmNetworkManager;
-import com.google.android.gms.gcm.GcmTaskService;
-import com.google.android.gms.gcm.TaskParams;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -31,48 +31,50 @@ import okhttp3.Response;
  * Created by snigavig on 30.12.16.
  */
 
-public class SyncTasksService extends GcmTaskService {
+public class SyncTasksService extends SimpleJobService {
 
+    public static final String TASK_TAG_INITIAL_SYNC_PODCASTS = "init_sync_podcasts_task";
     public static final String TASK_TAG_SYNC_PODCASTS = "sync_podcasts_task";
-    public static final String ACTION_DONE = "SyncTasksService#ACTION_DONE";
+    public static final String ACTION_SYNC_PODCASTS_DONE = "SyncTasksService#ACTION_SYNC_PODCASTS_DONE";
     public static final String EXTRA_TAG = "extra_tag";
     public static final String EXTRA_RESULT = "extra_result";
     private static final String TAG = "SyncTasksService";
     private OkHttpClient mClient = new OkHttpClient();
 
     @Override
-    public void onInitializeTasks() {
-        // TODO: reschedule tasks on application update
+    public boolean onStopJob(JobParameters job) {
+        return super.onStopJob(job);
+        //TODO: handle stop job properly
     }
 
     @Override
-    public int onRunTask(TaskParams taskParams) {
-        String tag = taskParams.getTag();
-        int result = GcmNetworkManager.RESULT_SUCCESS;
-
-        if (TASK_TAG_SYNC_PODCASTS.equals(tag)) {
+    public int onRunJob(JobParameters parameters) {
+        String tag = parameters.getTag();
+        @JobResult int result = JobService.RESULT_SUCCESS;
+        if (TASK_TAG_SYNC_PODCASTS.equals(tag) || TASK_TAG_INITIAL_SYNC_PODCASTS.equals(tag)) {
             result = syncPodcastsTask();
         }
 
         Intent intent = new Intent();
-        intent.setAction(ACTION_DONE);
+        intent.setAction(ACTION_SYNC_PODCASTS_DONE);
         intent.putExtra(EXTRA_TAG, tag);
         intent.putExtra(EXTRA_RESULT, result);
 
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
 
-        // RESULT_SUCCESS | RESULT_FAILURE | RESULT_RESCHEDULE
         return result;
     }
 
-    private int syncPodcastsTask() {
+    private
+    @JobResult
+    int syncPodcastsTask() {
         String url = BuildConfig.PODCAST_URL;
         if (!"".equals(url)) {
             return processRss(mClient, url);
         } else {
             //TODO: implement logic for main client
-            return GcmNetworkManager.RESULT_SUCCESS;
+            return JobService.RESULT_SUCCESS;
         }
     }
 
@@ -87,6 +89,7 @@ public class SyncTasksService extends GcmTaskService {
             Realm realm = Realm.getDefaultInstance();
 
             Feed feed;
+            //noinspection TryFinallyCanBeTryWithResources
             try {
                 feed = EarlParser.parseOrThrow(inputStream, 0);
                 Log.i(TAG, "Processing feed entry: " + feed.getTitle());
@@ -130,22 +133,22 @@ public class SyncTasksService extends GcmTaskService {
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();
                 StateUIApplication.onError();
-                return GcmNetworkManager.RESULT_FAILURE;
+                return JobService.RESULT_FAIL_RETRY;
             } finally {
                 realm.close();
             }
 
             if (response.code() != 200) {
                 StateUIApplication.onError();
-                return GcmNetworkManager.RESULT_FAILURE;
+                return JobService.RESULT_FAIL_RETRY;
             }
         } catch (IOException e) {
             StateUIApplication.onError();
             Log.e(TAG, "fetchUrl:error" + e.toString());
-            return GcmNetworkManager.RESULT_FAILURE;
+            return JobService.RESULT_FAIL_RETRY;
         }
 
         StateUIApplication.onSuccess();
-        return GcmNetworkManager.RESULT_SUCCESS;
+        return JobService.RESULT_SUCCESS;
     }
 }

@@ -3,12 +3,14 @@ package com.goodcodeforfun.podcasterproject;
 import android.util.Log;
 
 import com.facebook.stetho.Stetho;
+import com.firebase.jobdispatcher.FirebaseJobDispatcher;
+import com.firebase.jobdispatcher.GooglePlayDriver;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.Trigger;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
 import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.SharedPreferencesUtils;
 import com.goodcodeforfun.stateui.StateUIApplication;
-import com.google.android.gms.gcm.GcmNetworkManager;
-import com.google.android.gms.gcm.PeriodicTask;
 
 import io.realm.Realm;
 
@@ -20,11 +22,15 @@ public class PodcasterProjectApplication extends StateUIApplication {
     private static final String TAG = PodcasterProjectApplication.class.getSimpleName();
 
     private static PodcasterProjectApplication mInstance;
-    private GcmNetworkManager mGcmNetworkManager;
+    private FirebaseJobDispatcher mFirebaseJobDispatcher;
     private SharedPreferencesUtils mSharedPreferencesUtils;
 
     public static PodcasterProjectApplication getInstance() {
         return mInstance;
+    }
+
+    public FirebaseJobDispatcher getFirebaseJobDispatcher() {
+        return mFirebaseJobDispatcher;
     }
 
     public void onCreate() {
@@ -34,7 +40,7 @@ public class PodcasterProjectApplication extends StateUIApplication {
         mSharedPreferencesUtils = new SharedPreferencesUtils(this);
         Realm.init(this);
         Stetho.initializeWithDefaults(this);
-        mGcmNetworkManager = GcmNetworkManager.getInstance(this);
+        mFirebaseJobDispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         startSyncPodcastsTask();
     }
 
@@ -42,8 +48,6 @@ public class PodcasterProjectApplication extends StateUIApplication {
     @Override
     public void onTerminate() {
         super.onTerminate();
-        // a way to cancel all tasks
-        //mGcmNetworkManager.cancelAllTasks(SyncTasksService.class);
     }
 
     public SharedPreferencesUtils getSharedPreferencesUtils() {
@@ -52,18 +56,18 @@ public class PodcasterProjectApplication extends StateUIApplication {
 
     private void startSyncPodcastsTask() {
         Log.d(TAG, "startSyncPodcastsTask");
-        PeriodicTask task = new PeriodicTask.Builder()
+        Job task = getFirebaseJobDispatcher().newJobBuilder()
                 .setService(SyncTasksService.class)
                 .setTag(SyncTasksService.TASK_TAG_SYNC_PODCASTS)
-                .setPeriod(30L)
+                .setRecurring(true)
+                .setTrigger(Trigger.executionWindow(0, 3600))
                 .build();
 
-        mGcmNetworkManager.schedule(task);
+        mFirebaseJobDispatcher.schedule(task);
     }
 
     public void stopSyncPodcastsTask() {
         Log.d(TAG, "stopSyncPodcastsTask");
-        mGcmNetworkManager.cancelTask(SyncTasksService.TASK_TAG_SYNC_PODCASTS, SyncTasksService.class);
+        mFirebaseJobDispatcher.cancel(SyncTasksService.TASK_TAG_SYNC_PODCASTS);
     }
-
 }

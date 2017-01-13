@@ -35,13 +35,14 @@ import android.widget.SeekBar;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
+import com.firebase.jobdispatcher.Job;
+import com.firebase.jobdispatcher.RetryStrategy;
+import com.firebase.jobdispatcher.Trigger;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 import com.goodcodeforfun.podcasterproject.util.UIUtils;
 import com.goodcodeforfun.stateui.StateUIActivity;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -57,12 +58,12 @@ import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_A
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PROGRESS_UPDATE_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_SUSUPEND_ACTION;
+import static com.goodcodeforfun.podcasterproject.sync.SyncTasksService.TASK_TAG_INITIAL_SYNC_PODCASTS;
 
 public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
 
     private static final String TAG = "MainActivity";
-    private static final int RC_PLAY_SERVICES = 123;
     private static int index = -1;
     private static int top = -1;
     private FloatingActionButton fabPlayPause;
@@ -76,26 +77,24 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private LinearLayoutManager mLayoutManager;
     private Podcast currentPodcast;
     private PodcastListAdapter mAdapter;
-    private final BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(SyncTasksService.ACTION_DONE)) {
-                String tag = intent.getStringExtra(SyncTasksService.EXTRA_TAG);
-                int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
-
-                String msg = String.format(Locale.getDefault(), "DONE: %s (%d)", tag, result);
-                if (mAdapter != null) {
-                    mAdapter.notifyDataSetChanged();
-                }
-                showSimpleToast(msg);
-            }
-        }
-    };
     private AppCompatTextView podcastTime;
     private DisplayMetrics displayMetrics;
     private float dpScreenWidth;
     private int shadowHeight;
     private int actionBarStabSize;
+    private final BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(SyncTasksService.ACTION_SYNC_PODCASTS_DONE)) {
+                if (mAdapter != null) {
+                    mAdapter.notifyDataSetChanged();
+                } else {
+                    onStopProgress();
+                    populateUI();
+                }
+            }
+        }
+    };
     private final BroadcastReceiver mPlayerStatusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -161,7 +160,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         setContentView(R.layout.activity_main);
         prepareUIMetrics();
         prepareUI();
-        checkPlayServicesAvailable();
         populateUI();
         if (fabPlayPause.getId() == R.id.play_pause_button &&
                 PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() !=
@@ -202,7 +200,22 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private void populateUI() {
         Realm realm = Realm.getDefaultInstance();
         final RealmResults<Podcast> podcasts = realm.where(Podcast.class).findAll();
-        processPodcastsRealm(podcasts);
+        if (podcasts.size() > 0) {
+            processPodcastsRealm(podcasts);
+        } else {
+            onProgress();
+
+            Job myJob = PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().newJobBuilder()
+                    .setService(SyncTasksService.class)
+                    .setTag(TASK_TAG_INITIAL_SYNC_PODCASTS)
+                    .setRecurring(false)
+                    .setTrigger(Trigger.NOW)
+                    .setReplaceCurrent(false)
+                    .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
+                    .build();
+
+            PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().mustSchedule(myJob);
+        }
         podcasts.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
             @Override
             public void onChange(RealmResults<Podcast> podcastRawList) {
@@ -267,7 +280,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
 
         IntentFilter syncStateFilter = new IntentFilter();
-        syncStateFilter.addAction(SyncTasksService.ACTION_DONE);
+        syncStateFilter.addAction(SyncTasksService.ACTION_SYNC_PODCASTS_DONE);
 
         IntentFilter playerStateFilter = new IntentFilter();
         playerStateFilter.addAction(BROADCAST_PLAY_ACTION);
@@ -279,8 +292,9 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
         manager.registerReceiver(mSyncStatusReceiver, syncStateFilter);
         manager.registerReceiver(mPlayerStatusReceiver, playerStateFilter);
-
-        mAdapter.notifyDataSetChanged();
+        if (mAdapter != null) {
+            mAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -323,21 +337,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     @Override
     public void onErrorUI() {
         showSimpleToast("Error");
-    }
-
-    private void checkPlayServicesAvailable() {
-        GoogleApiAvailability availability = GoogleApiAvailability.getInstance();
-        int resultCode = availability.isGooglePlayServicesAvailable(this);
-
-        if (resultCode != ConnectionResult.SUCCESS) {
-            if (availability.isUserResolvableError(resultCode)) {
-                // Show dialog to resolve the error.
-                availability.getErrorDialog(this, resultCode, RC_PLAY_SERVICES).show();
-            } else {
-                // Unresolvable error
-                showSimpleToast("Google Play Services error");
-            }
-        }
     }
 
     private void initSeekBar() {
