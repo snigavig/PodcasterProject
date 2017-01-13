@@ -1,5 +1,6 @@
 package com.goodcodeforfun.podcasterproject.sync;
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -41,44 +42,16 @@ public class SyncTasksService extends SimpleJobService {
     private static final String TAG = "SyncTasksService";
     private OkHttpClient mClient = new OkHttpClient();
 
-    @Override
-    public boolean onStopJob(JobParameters job) {
-        return super.onStopJob(job);
-        //TODO: handle stop job properly
-    }
-
-    @Override
-    public int onRunJob(JobParameters parameters) {
-        String tag = parameters.getTag();
-        @JobResult int result = JobService.RESULT_SUCCESS;
-        if (TASK_TAG_SYNC_PODCASTS.equals(tag) || TASK_TAG_INITIAL_SYNC_PODCASTS.equals(tag)) {
-            result = syncPodcastsTask();
-        }
-
+    public static void sendResultBroadcast(Context context, String tag, @JobResult int result) {
         Intent intent = new Intent();
         intent.setAction(ACTION_SYNC_PODCASTS_DONE);
         intent.putExtra(EXTRA_TAG, tag);
         intent.putExtra(EXTRA_RESULT, result);
-
-        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(context);
         manager.sendBroadcast(intent);
-
-        return result;
     }
 
-    private
-    @JobResult
-    int syncPodcastsTask() {
-        String url = BuildConfig.PODCAST_URL;
-        if (!"".equals(url)) {
-            return processRss(mClient, url);
-        } else {
-            //TODO: implement logic for main client
-            return JobService.RESULT_SUCCESS;
-        }
-    }
-
-    private int processRss(OkHttpClient client, String url) {
+    public static int processRss(OkHttpClient client, String url) {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
@@ -133,22 +106,52 @@ public class SyncTasksService extends SimpleJobService {
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();
                 StateUIApplication.onError();
-                return JobService.RESULT_FAIL_RETRY;
+                return JobService.RESULT_FAIL_NORETRY;
             } finally {
                 realm.close();
             }
 
             if (response.code() != 200) {
                 StateUIApplication.onError();
-                return JobService.RESULT_FAIL_RETRY;
+                return JobService.RESULT_FAIL_NORETRY;
             }
         } catch (IOException e) {
             StateUIApplication.onError();
             Log.e(TAG, "fetchUrl:error" + e.toString());
-            return JobService.RESULT_FAIL_RETRY;
+            return JobService.RESULT_FAIL_NORETRY;
         }
 
         StateUIApplication.onSuccess();
         return JobService.RESULT_SUCCESS;
+    }
+
+    @Override
+    public boolean onStopJob(JobParameters job) {
+        return super.onStopJob(job);
+        //TODO: handle stop job properly
+    }
+
+    @Override
+    public int onRunJob(JobParameters parameters) {
+        String tag = parameters.getTag();
+        @JobResult int result = JobService.RESULT_SUCCESS;
+        if (TASK_TAG_SYNC_PODCASTS.equals(tag) || TASK_TAG_INITIAL_SYNC_PODCASTS.equals(tag)) {
+            result = syncPodcastsTask();
+        }
+
+        sendResultBroadcast(this, tag, result);
+        return result;
+    }
+
+    private
+    @JobResult
+    int syncPodcastsTask() {
+        String url = BuildConfig.PODCAST_URL;
+        if (!"".equals(url)) {
+            return processRss(mClient, url);
+        } else {
+            //TODO: implement logic for main client
+            return JobService.RESULT_SUCCESS;
+        }
     }
 }

@@ -35,10 +35,8 @@ import android.widget.SeekBar;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
-import com.firebase.jobdispatcher.Job;
-import com.firebase.jobdispatcher.RetryStrategy;
-import com.firebase.jobdispatcher.Trigger;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
+import com.goodcodeforfun.podcasterproject.sync.SyncManager;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 import com.goodcodeforfun.podcasterproject.util.UIUtils;
@@ -58,7 +56,6 @@ import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_A
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PROGRESS_UPDATE_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_SUSUPEND_ACTION;
-import static com.goodcodeforfun.podcasterproject.sync.SyncTasksService.TASK_TAG_INITIAL_SYNC_PODCASTS;
 
 public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
@@ -204,27 +201,17 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             processPodcastsRealm(podcasts);
         } else {
             onProgress();
-
-            Job myJob = PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().newJobBuilder()
-                    .setService(SyncTasksService.class)
-                    .setTag(TASK_TAG_INITIAL_SYNC_PODCASTS)
-                    .setRecurring(false)
-                    .setTrigger(Trigger.NOW)
-                    .setReplaceCurrent(false)
-                    .setRetryStrategy(RetryStrategy.DEFAULT_EXPONENTIAL)
-                    .build();
-
-            PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().mustSchedule(myJob);
+            SyncManager.startActionSyncPodcastsImmediately(MainActivity.this);
         }
-        podcasts.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
+    }
+
+    private void processPodcastsRealm(RealmResults<Podcast> podcastRawList) {
+        podcastRawList.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
             @Override
             public void onChange(RealmResults<Podcast> podcastRawList) {
                 processPodcastsRealm(podcastRawList);
             }
         });
-    }
-
-    private void processPodcastsRealm(RealmResults<Podcast> podcastRawList) {
         ArrayList<Podcast> podcastList = new ArrayList<>();
         for (Podcast podcast : podcastRawList) {
             Log.e(TAG, podcast.toString());

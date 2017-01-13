@@ -27,10 +27,9 @@
 
         <service
             android:name=".sync.SyncTasksService"
-            android:exported="true"
-            android:permission="com.google.android.gms.permission.BIND_NETWORK_TASK_SERVICE">
+            android:exported="false">
             <intent-filter>
-                <action android:name="com.google.android.gms.gcm.ACTION_TASK_READY" />
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />"
             </intent-filter>
         </service>
 
@@ -47,6 +46,9 @@
             android:name=".PlayerService"
             android:enabled="true"
             android:exported="true" />
+        <service
+            android:name=".sync.SyncManager"
+            android:exported="false"></service>
     </application>
 
 </manifest>

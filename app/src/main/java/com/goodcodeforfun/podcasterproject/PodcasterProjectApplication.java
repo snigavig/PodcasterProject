@@ -1,13 +1,9 @@
 package com.goodcodeforfun.podcasterproject;
 
-import android.util.Log;
-
 import com.facebook.stetho.Stetho;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
-import com.firebase.jobdispatcher.Job;
-import com.firebase.jobdispatcher.Trigger;
-import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
+import com.goodcodeforfun.podcasterproject.sync.SyncManager;
 import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.SharedPreferencesUtils;
 import com.goodcodeforfun.stateui.StateUIApplication;
@@ -41,7 +37,7 @@ public class PodcasterProjectApplication extends StateUIApplication {
         Realm.init(this);
         Stetho.initializeWithDefaults(this);
         mFirebaseJobDispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
-        startSyncPodcastsTask();
+        SyncManager.startSyncPodcastsTask();
     }
 
     @SuppressWarnings("EmptyMethod")
@@ -54,20 +50,4 @@ public class PodcasterProjectApplication extends StateUIApplication {
         return mSharedPreferencesUtils;
     }
 
-    private void startSyncPodcastsTask() {
-        Log.d(TAG, "startSyncPodcastsTask");
-        Job task = getFirebaseJobDispatcher().newJobBuilder()
-                .setService(SyncTasksService.class)
-                .setTag(SyncTasksService.TASK_TAG_SYNC_PODCASTS)
-                .setRecurring(true)
-                .setTrigger(Trigger.executionWindow(0, 3600))
-                .build();
-
-        mFirebaseJobDispatcher.schedule(task);
-    }
-
-    public void stopSyncPodcastsTask() {
-        Log.d(TAG, "stopSyncPodcastsTask");
-        mFirebaseJobDispatcher.cancel(SyncTasksService.TASK_TAG_SYNC_PODCASTS);
-    }
 }

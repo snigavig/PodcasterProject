@@ -66,7 +66,7 @@ dependencies {
     //noinspection GradleDependency
     compile 'com.android.support:appcompat-v7:25.1.0'
     compile 'com.firebase:firebase-jobdispatcher:0.5.2'
-    compile 'com.goodcodeforfun:stateui:0.0.1-preview6'
+    compile 'com.goodcodeforfun:stateui:0.0.1-preview7'
     //RSS parser
     compile 'com.einmalfel:earl:1.2.0'
     compile 'com.github.bumptech.glide:glide:3.7.0'
