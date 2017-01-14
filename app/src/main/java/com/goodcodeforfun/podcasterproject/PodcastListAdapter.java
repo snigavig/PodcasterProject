@@ -4,22 +4,23 @@ import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.net.Uri;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
+import android.os.Handler;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.util.LongSparseArray;
+import android.support.v7.widget.AppCompatImageView;
+import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.f2prateek.progressbutton.ProgressButton;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 
@@ -32,7 +33,12 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_ITEM = 1;
     private final WeakReference<MainActivity> mActivityWeakReference;
+    private final Handler handler = new Handler();
     private ArrayList<Podcast> podcastArrayList;
+    private LongSparseArray<ProgressButton> downloadingProgress = new LongSparseArray<>();
+    private String downloadPodcastUrl;
+    private ProgressButton progressButton;
+    private DownloadManager manager = null;
 
     PodcastListAdapter(MainActivity activity, ArrayList<Podcast> podcastArrayList) {
         this.podcastArrayList = podcastArrayList;
@@ -80,17 +86,23 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 @Override
                 public void onClick(View view) {
                     PlayerService.stopMediaPlayback(activity);
-                    PlayerService.startMediaPlayback(activity, podcast.getPrimaryKey(), false /*should restore previous state*/);
+                    PlayerService.startMediaPlayback(activity, podcast.getPrimaryKey(), false /*should NOT restore previous state*/);
                 }
             });
 
             File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(getItem(position).getAudioUrl()));
             if (file.isFile()) {
-                viewHolder.downloadButton.setImageDrawable(ContextCompat.getDrawable(activity, R.drawable.ic_archive_red_24dp));
+                viewHolder.downloadButton.setPinned(true);
+                int progress = podcast.getDownloadProgress();
+                if (progress != -1) {
+                    viewHolder.downloadButton.setProgress(progress);
+                }
+                //viewHolder.downloadButton.setImageDrawable(ContextCompat.getDrawable(activity, R.drawable.ic_archive_red_24dp));
                 viewHolder.downloadButton.setEnabled(false);
                 viewHolder.downloadButton.setClickable(false);
             } else {
-                viewHolder.downloadButton.setImageDrawable(ContextCompat.getDrawable(activity, R.drawable.ic_archive_black_24dp));
+                viewHolder.downloadButton.setPinned(false);
+                //viewHolder.downloadButton.setImageDrawable(ContextCompat.getDrawable(activity, R.drawable.ic_archive_black_24dp));
                 viewHolder.downloadButton.setEnabled(true);
                 viewHolder.downloadButton.setClickable(true);
             }
@@ -98,7 +110,8 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             viewHolder.downloadButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
+                    downloadPodcastUrl = podcast.getAudioUrl();
+                    progressButton = (ProgressButton) view;
                     if (ContextCompat.checkSelfPermission(activity,
                             Manifest.permission.WRITE_EXTERNAL_STORAGE)
                             != PackageManager.PERMISSION_GRANTED ||
@@ -107,24 +120,10 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                     != PackageManager.PERMISSION_GRANTED) {
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            ActivityCompat.requestPermissions(activity,
-                                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE},
-                                    StorageUtils.STORAGE_PERMISSIONS);
+                            StorageUtils.requestStoragePermissions(activity);
                         }
                     } else {
-
-                        String url = podcast.getAudioUrl();
-                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                        request.setDescription(activity.getString(R.string.download_description));
-                        request.setTitle(activity.getString(R.string.download_title));
-
-                        request.allowScanningByMediaScanner();
-                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PODCASTS, StorageUtils.getFileNameFromUrl(podcast.getAudioUrl()));
-
-                        DownloadManager manager = (DownloadManager) activity.getSystemService(Context.DOWNLOAD_SERVICE);
-                        manager.enqueue(request);
-
+                        downloadPodcast(activity);
                     }
                 }
             });
@@ -142,32 +141,76 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     }
 
+    private void downloadProgressUpdater(final long downloadId) {
+        //boolean downloading = true;
+
+        //while (downloading) {
+
+        DownloadManager.Query q = new DownloadManager.Query();
+        q.setFilterById(downloadId);
+
+        Cursor cursor = manager.query(q);
+        cursor.moveToFirst();
+        if (cursor.getCount() > 0) {
+            int bytes_downloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+            int bytes_total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+
+            if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
+                //FINISHED DOWNLOAD
+                return;
+            }
+
+            final int dl_progress = (int) ((bytes_downloaded * 100L) / bytes_total);
+            Log.e("PROGRESS: ", String.valueOf(dl_progress));
+            downloadingProgress.get(downloadId).setProgress(dl_progress);
+
+            //Log.d(Constants.MAIN_VIEW_ACTIVITY, statusMessage(cursor));
+        }
+        cursor.close();
+        //}
+        Runnable notification = new Runnable() {
+            public void run() {
+                downloadProgressUpdater(downloadId);
+            }
+        };
+        handler.postDelayed(notification, 1000);
+    }
+
+    public void downloadPodcast(MainActivity activity) {
+        if (manager == null) {
+            manager = (DownloadManager) activity.getSystemService(Context.DOWNLOAD_SERVICE);
+        }
+        if (downloadPodcastUrl != null && progressButton != null) {
+            final long downloadId = StorageUtils.downloadFile(activity, downloadPodcastUrl);
+            downloadingProgress.append(downloadId, progressButton);
+            downloadProgressUpdater(downloadId);
+        }
+    }
+
     @Override
     public int getItemCount() {
         return podcastArrayList.size() + 1;
     }
 
     private class PodcastItemViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tv_title;
-        private final ImageView podcastImageView;
+        private final AppCompatTextView tv_title;
+        private final AppCompatImageView podcastImageView;
         private final RelativeLayout cv_wrap;
-        private final ImageButton downloadButton;
+        private final ProgressButton downloadButton;
 
         PodcastItemViewHolder(View view) {
             super(view);
-            tv_title = (TextView) view.findViewById(R.id.tv_title);
-            podcastImageView = (ImageView) view.findViewById(R.id.podcastImageView);
-            downloadButton = (ImageButton) view.findViewById(R.id.downloadButton);
+            tv_title = (AppCompatTextView) view.findViewById(R.id.tv_title);
+            podcastImageView = (AppCompatImageView) view.findViewById(R.id.podcastImageView);
+            downloadButton = (ProgressButton) view.findViewById(R.id.downloadButton);
             cv_wrap = (RelativeLayout) view.findViewById(R.id.cv_wrap);
         }
     }
 
     private class PodcastHeaderViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView podcastImageView;
 
         PodcastHeaderViewHolder(View view) {
             super(view);
-            podcastImageView = (ImageView) view.findViewById(R.id.coverImageView);
         }
     }
 }

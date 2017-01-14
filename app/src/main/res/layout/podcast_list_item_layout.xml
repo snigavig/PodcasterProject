@@ -39,7 +39,7 @@
         android:textColor="@color/textColor"
         tools:ignore="RtlSymmetry" />
 
-    <android.support.v7.widget.AppCompatImageButton
+    <com.f2prateek.progressbutton.ProgressButton
         android:id="@id/downloadButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
@@ -48,5 +48,5 @@
         android:layout_centerVertical="true"
         android:layout_margin="5dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:srcCompat="@drawable/ic_archive_black_24dp" />
+        android:padding="5dp" />
 </RelativeLayout>

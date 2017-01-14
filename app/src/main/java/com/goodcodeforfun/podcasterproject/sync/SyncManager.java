@@ -55,7 +55,7 @@ public class SyncManager extends IntentService {
     }
 
     private void syncPodcastsImmediately(Context context) {
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = new OkHttpClient().newBuilder().retryOnConnectionFailure(false).build();
         String url = BuildConfig.PODCAST_URL;
         if (!"".equals(url)) {
             @JobService.JobResult int result = SyncTasksService.processRss(client, url);

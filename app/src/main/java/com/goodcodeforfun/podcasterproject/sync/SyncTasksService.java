@@ -14,6 +14,7 @@ import com.firebase.jobdispatcher.JobService;
 import com.firebase.jobdispatcher.SimpleJobService;
 import com.goodcodeforfun.podcasterproject.BuildConfig;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
+import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.stateui.StateUIApplication;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -69,7 +70,6 @@ public class SyncTasksService extends SimpleJobService {
                 for (Item item : feed.getItems()) {
 
                     final Podcast podcast = new Podcast();
-
                     String title = item.getTitle();
                     String imageUrl = item.getImageLink();
                     Date date = item.getPublicationDate();
@@ -93,10 +93,14 @@ public class SyncTasksService extends SimpleJobService {
                         podcast.setDate(new Date());
                     }
 
+                    final Podcast oldPodcast = DBUtils.getPodcastByPrimaryKey(realm, audioUrl);
 
                     realm.executeTransaction(new Realm.Transaction() {
                         @Override
                         public void execute(Realm realm) {
+                            if (oldPodcast != null) {
+                                podcast.setDownloadProgress(oldPodcast.getDownloadProgress());
+                            }
                             realm.copyToRealmOrUpdate(podcast);
                         }
                     });

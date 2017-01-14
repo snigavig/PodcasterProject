@@ -18,6 +18,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.goodcodeforfun.podcasterproject.model.Podcast;
+import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 
@@ -208,7 +209,7 @@ public class PlayerService extends Service implements
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
                 isRestore = intent.getBooleanExtra(EXTRA_PODCAST_IS_RESTORE_KEY, false);
                 Realm realm = Realm.getDefaultInstance();
-                Podcast podcast = realm.where(Podcast.class).equalTo("audioUrl", activePodcastPrimaryKey).findFirst();
+                Podcast podcast = DBUtils.getPodcastByPrimaryKey(realm, activePodcastPrimaryKey);
                 activePodcastName = podcast.getTitle();
                 PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
                 mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);

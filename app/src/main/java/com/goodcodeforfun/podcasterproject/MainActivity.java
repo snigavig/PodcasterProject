@@ -35,9 +35,11 @@ import android.widget.SeekBar;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
+import com.firebase.jobdispatcher.JobService;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.sync.SyncManager;
 import com.goodcodeforfun.podcasterproject.sync.SyncTasksService;
+import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 import com.goodcodeforfun.podcasterproject.util.UIUtils;
 import com.goodcodeforfun.stateui.StateUIActivity;
@@ -87,7 +89,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                     mAdapter.notifyDataSetChanged();
                 } else {
                     onStopProgress();
-                    populateUI();
+                    int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
+                    if (result != -1 && result == JobService.RESULT_SUCCESS) {
+                        populateUI();
+                    } else {
+                        onNoData();
+                    }
                 }
             }
         }
@@ -102,7 +109,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                     mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     String primaryKey = intent.getStringExtra(PlayerService.EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY);
                     Realm realm = Realm.getDefaultInstance();
-                    currentPodcast = realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
+                    currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, primaryKey);
 
                     if (mediaFileLengthInMilliseconds != -1) {
                         initPodcastTime(mediaFileLengthInMilliseconds);
@@ -196,7 +203,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
     private void populateUI() {
         Realm realm = Realm.getDefaultInstance();
-        final RealmResults<Podcast> podcasts = realm.where(Podcast.class).findAll();
+        final RealmResults<Podcast> podcasts = DBUtils.getAllPodcasts(realm);
         if (podcasts.size() > 0) {
             processPodcastsRealm(podcasts);
         } else {
@@ -209,6 +216,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         podcastRawList.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
             @Override
             public void onChange(RealmResults<Podcast> podcastRawList) {
+                Log.e(TAG, "SOMETHINGS CHANGED IN PODCASTS REALM");
                 processPodcastsRealm(podcastRawList);
             }
         });
@@ -511,11 +519,11 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
         if (requestCode == StorageUtils.STORAGE_PERMISSIONS) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                //fire pending request
-                Log.d(TAG, "got permissions");
+                if (mAdapter != null) {
+                    mAdapter.downloadPodcast(MainActivity.this);
+                }
             } else {
-                //retry
-                Log.d(TAG, "no permissions, need to retry the request");
+                StorageUtils.requestStoragePermissions(MainActivity.this);
             }
         }
     }

@@ -21,6 +21,8 @@ public class Podcast extends RealmObject {
     private String audioFile;
     @Required
     private Date date;
+    private Integer downloadProgress = -1;
+    private Integer order;
 
     public String getPrimaryKey() {
         return audioUrl;
@@ -72,5 +74,29 @@ public class Podcast extends RealmObject {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Boolean isDownloaded() {
+        return downloadProgress == 100;
+    }
+
+    public Boolean isDownloadInited() {
+        return downloadProgress != -1;
+    }
+
+    public int getDownloadProgress() {
+        return downloadProgress;
+    }
+
+    public void setDownloadProgress(int progress) {
+        downloadProgress = progress;
+    }
+
+    public Integer getOrder() {
+        return order;
+    }
+
+    public void setOrder(Integer order) {
+        this.order = order;
     }
 }
