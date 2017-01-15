@@ -66,9 +66,8 @@ public class SyncTasksService extends SimpleJobService {
             //noinspection TryFinallyCanBeTryWithResources
             try {
                 feed = EarlParser.parseOrThrow(inputStream, 0);
-                Log.i(TAG, "Processing feed entry: " + feed.getTitle());
+                int itemOrder = feed.getItems().size();
                 for (Item item : feed.getItems()) {
-
                     final Podcast podcast = new Podcast();
                     String title = item.getTitle();
                     String imageUrl = item.getImageLink();
@@ -86,6 +85,8 @@ public class SyncTasksService extends SimpleJobService {
                     podcast.setImageUrl(imageUrl);
                     podcast.setAudioUrl(audioUrl);
                     podcast.setAudioSize(audioSize);
+                    podcast.setOrder(itemOrder);
+                    itemOrder--;
 
                     if (date != null) {
                         podcast.setDate(date);
@@ -106,7 +107,7 @@ public class SyncTasksService extends SimpleJobService {
                         }
                     });
 
-                    Log.i(TAG, "Item title: " + (title == null ? "N/A" : title));
+                    Log.i(TAG, "Item order: " + itemOrder);
                 }
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();

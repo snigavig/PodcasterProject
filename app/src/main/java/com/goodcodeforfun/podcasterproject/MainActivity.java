@@ -121,8 +121,10 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                     setButtonToPlayState();
                     break;
                 case BROADCAST_NEXT_ACTION:
+                    initDetailsPanel();
                     break;
                 case BROADCAST_PREVIOUS_ACTION:
+                    initDetailsPanel();
                     break;
                 case BROADCAST_BUFFERING_UPDATE_ACTION:
                     int bufferingValue = intent.getIntExtra(PlayerService.EXTRA_PODCAST_BUFFERING_VALUE_KEY, -1);
@@ -162,6 +164,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setupLastPodcast();
         prepareUIMetrics();
         prepareUI();
         populateUI();
@@ -187,6 +190,15 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         }
                     })
                     .show();
+        }
+    }
+
+    private void setupLastPodcast() {
+        String lastPodcast = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
+        if (!"".equals(lastPodcast)) {
+            Realm realm = Realm.getDefaultInstance();
+            currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, lastPodcast);
+            realm.close();
         }
     }
 
@@ -232,32 +244,8 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         }
         if (currentPodcast == null && podcastList.size() > 0 && podcastList.get(0) != null) {
             currentPodcast = podcastList.get(0);
-            initDetailsPanel();
         }
-
-//        if (getCount() > 0) {
-//            fabNext.setVisibility(View.VISIBLE);
-//            fabNext.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                      PlayerService.nextMedia(this);
-//                }
-//            });
-//        } else {
-//            fabNext.setVisibility(View.INVISIBLE);
-//        }
-//
-//        if (getCount() > 0) {
-//            fabPrevious.setVisibility(View.VISIBLE);
-//            fabPrevious.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                      PlayerService.previousMedia(this);
-//                }
-//            });
-//        } else {
-//            fabPrevious.setVisibility(View.INVISIBLE);
-//        }
+        initDetailsPanel();
     }
 
     @Override
@@ -444,6 +432,35 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         (int) (((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
             }
         });
+
+        if (currentPodcast != null) {
+            Realm realm = Realm.getDefaultInstance();
+            Podcast nextPodcast = DBUtils.getNextPodcast(realm, currentPodcast.getOrder());
+            if (nextPodcast != null) {
+                fabNext.setVisibility(View.VISIBLE);
+                fabNext.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        PlayerService.nextMedia(MainActivity.this, currentPodcast.getPrimaryKey());
+                    }
+                });
+            } else {
+                fabNext.setVisibility(View.INVISIBLE);
+            }
+
+            Podcast previousPodcast = DBUtils.getPreviousPodcast(realm, currentPodcast.getOrder());
+            if (previousPodcast != null) {
+                fabPrevious.setVisibility(View.VISIBLE);
+                fabPrevious.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        PlayerService.previousMedia(MainActivity.this, currentPodcast.getPrimaryKey());
+                    }
+                });
+            } else {
+                fabPrevious.setVisibility(View.INVISIBLE);
+            }
+        }
     }
 
     @Override

@@ -227,6 +227,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     realm.copyToRealmOrUpdate(currentDownloadedPodcast);
                 }
             });
+            realm.close();
             downloadingProgressButtons.append(downloadId, progressButton);
             downloadProgressUpdater(downloadId, true);
         }

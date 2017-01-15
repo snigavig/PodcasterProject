@@ -88,14 +88,16 @@ public class PlayerService extends Service implements
         context.startService(podcastPlayerServiceIntent);
     }
 
-    public static void nextMedia(Context context) {
+    public static void nextMedia(Context context, String currentPrimaryKey) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPrimaryKey);
         podcastPlayerServiceIntent.setAction(NEXT_ACTION);
         context.startService(podcastPlayerServiceIntent);
     }
 
-    public static void previousMedia(Context context) {
+    public static void previousMedia(Context context, String currentPrimaryKey) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
+        podcastPlayerServiceIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPrimaryKey);
         podcastPlayerServiceIntent.setAction(PREVIOUS_ACTION);
         context.startService(podcastPlayerServiceIntent);
     }
@@ -203,8 +205,22 @@ public class PlayerService extends Service implements
                 }
                 break;
             case NEXT_ACTION:
+                activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
                 pauseMediaPlayback(this);
+                Realm realmNext = Realm.getDefaultInstance();
+                Podcast currentPodcastNext = DBUtils.getPodcastByPrimaryKey(realmNext, activePodcastPrimaryKey);
+                Podcast nextPodcast = DBUtils.getNextPodcast(realmNext, currentPodcastNext.getOrder());
+                startMediaPlayback(this, nextPodcast.getPrimaryKey(), false);
+                realmNext.close();
                 break;
+            case PREVIOUS_ACTION:
+                activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
+                pauseMediaPlayback(this);
+                Realm realmPrev = Realm.getDefaultInstance();
+                Podcast currentPodcastPrev = DBUtils.getPodcastByPrimaryKey(realmPrev, activePodcastPrimaryKey);
+                Podcast prevPodcast = DBUtils.getPreviousPodcast(realmPrev, currentPodcastPrev.getOrder());
+                startMediaPlayback(this, prevPodcast.getPrimaryKey(), false);
+                realmPrev.close();
             case START_PLAY_ACTION:
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
                 isRestore = intent.getBooleanExtra(EXTRA_PODCAST_IS_RESTORE_KEY, false);
@@ -233,6 +249,7 @@ public class PlayerService extends Service implements
                 } else {
                     prepareMediaPlayer(podcast.getAudioUrl());
                 }
+                realm.close();
                 break;
             case PAUSE_PLAY_ACTION:
                 if (mediaPlayer != null) {
@@ -336,7 +353,7 @@ public class PlayerService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
-        nextMedia(this);
+        nextMedia(this, activePodcastPrimaryKey);
     }
 
     private void sendBufferingUpdateBroadcast(int bufferingValue) {
