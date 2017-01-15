@@ -100,6 +100,7 @@ public class SyncTasksService extends SimpleJobService {
                         public void execute(Realm realm) {
                             if (oldPodcast != null) {
                                 podcast.setDownloadProgress(oldPodcast.getDownloadProgress());
+                                podcast.setDownloadId(oldPodcast.getDownloadId());
                             }
                             realm.copyToRealmOrUpdate(podcast);
                         }

@@ -33,7 +33,7 @@ public class SyncManager extends IntentService {
                 .setService(SyncTasksService.class)
                 .setTag(SyncTasksService.TASK_TAG_SYNC_PODCASTS)
                 .setRecurring(true)
-                .setTrigger(Trigger.executionWindow(0, 30))
+                .setTrigger(Trigger.executionWindow(0, 180))
                 .build();
 
         PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().schedule(task);

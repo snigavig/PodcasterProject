@@ -188,7 +188,9 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             final int dl_progress = (int) ((bytes_downloaded * 100L) / bytes_total);
             Log.e("PROGRESS: ", String.valueOf(dl_progress));
-            downloadingProgressButtons.get(downloadId).setProgress(dl_progress);
+            if (downloadingProgressButtons.get(downloadId) != null) {
+                downloadingProgressButtons.get(downloadId).setProgress(dl_progress);
+            }
         }
         cursor.close();
         Runnable updateDownloadProgress = new Runnable() {
@@ -202,7 +204,8 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         if (!isInitStart && downloadingProgressRunnables.get(downloadId) != null) {
             downloadingProgressRunnables.remove(downloadId);
-        } else {
+        }
+        if (downloadingProgressButtons.get(downloadId) != null) {
             downloadingProgressRunnables.append(downloadId, updateDownloadProgress);
             handler.postDelayed(updateDownloadProgress, 1000);
         }
