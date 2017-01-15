@@ -22,6 +22,7 @@ public class Podcast extends RealmObject {
     @Required
     private Date date;
     private Integer downloadProgress = -1;
+    private Long downloadId = 0L;
     private Integer order;
 
     public String getPrimaryKey() {
@@ -98,5 +99,13 @@ public class Podcast extends RealmObject {
 
     public void setOrder(Integer order) {
         this.order = order;
+    }
+
+    public Long getDownloadId() {
+        return downloadId;
+    }
+
+    public void setDownloadId(Long downloadId) {
+        this.downloadId = downloadId;
     }
 }
