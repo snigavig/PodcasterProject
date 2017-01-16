@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/podcast_track_list"
         android:layout_width="match_parent"
@@ -95,4 +94,10 @@
             app:title="@string/app_name"
             app:titleTextColor="@android:color/primary_text_dark" />
     </android.support.design.widget.AppBarLayout>
+
+    <include
+        android:id="@+id/no_data_view"
+        layout="@layout/no_data_layout"
+        android:visibility="gone" />
+
 </android.support.design.widget.CoordinatorLayout>

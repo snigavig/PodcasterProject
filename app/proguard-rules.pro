@@ -74,4 +74,3 @@
    void set*(***);
    *** get*();
 }
--keepresourcexmlattributenames vector/**
