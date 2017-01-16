@@ -77,6 +77,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private Podcast currentPodcast;
     private PodcastListAdapter mAdapter;
     private AppCompatTextView podcastTime;
+    private LinearLayout noDataUI;
     private DisplayMetrics displayMetrics;
     private float dpScreenWidth;
     private int shadowHeight;
@@ -321,11 +322,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
     @Override
     protected void onNoDataUI() {
-        //Implement no data ui
+        noDataUI.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onSuccessUI() {
+        noDataUI.setVisibility(View.GONE);
         showSimpleToast("Success");
     }
 
@@ -484,7 +486,15 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         setSupportActionBar(toolbar);
 
         mActionBar = (AppBarLayout) findViewById(R.id.toolbarLayout);
-
+        noDataUI = (LinearLayout) findViewById(R.id.no_data_view);
+        FloatingActionButton refreshButton = (FloatingActionButton) findViewById(R.id.refreshImageButton);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onProgress();
+                SyncManager.startActionSyncPodcastsImmediately(MainActivity.this);
+            }
+        });
         fabPlayPause = (FloatingActionButton) findViewById(R.id.play_pause_button);
         fabPrevious = (FloatingActionButton) findViewById(R.id.previous_track_button);
         fabNext = (FloatingActionButton) findViewById(R.id.next_track_button);
