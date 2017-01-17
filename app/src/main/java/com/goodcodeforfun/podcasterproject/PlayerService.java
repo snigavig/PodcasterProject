@@ -36,7 +36,7 @@ public class PlayerService extends Service implements
     public static final int PLAYING = 0;
     public static final int PAUSED = 1;
     public static final String BROADCAST_PREVIOUS_ACTION = "PlayerService#ACTION_PREVIOUS";
-    public static final String BROADCAST_SUSUPEND_ACTION = "PlayerService#ACTION_STOP";
+    public static final String BROADCAST_SUSPEND_ACTION = "PlayerService#ACTION_STOP";
     public static final String BROADCAST_PLAY_ACTION = "PlayerService#ACTION_PLAY";
     public static final String BROADCAST_NEXT_ACTION = "PlayerService#ACTION_NEXT";
     public static final String BROADCAST_PROGRESS_UPDATE_ACTION = "PlayerService#ACTION_PROGRESS_UPDATE";
@@ -170,7 +170,7 @@ public class PlayerService extends Service implements
             mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.prepareAsync();
         } catch (Exception e) {
-            Log.e(TAG, e.getLocalizedMessage());
+            Log.e(TAG, e.toString());
         }
     }
 
@@ -205,8 +205,8 @@ public class PlayerService extends Service implements
                 }
                 break;
             case NEXT_ACTION:
+                stopMediaPlayback(this);
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
-                pauseMediaPlayback(this);
                 Realm realmNext = Realm.getDefaultInstance();
                 Podcast currentPodcastNext = DBUtils.getPodcastByPrimaryKey(realmNext, activePodcastPrimaryKey);
                 Podcast nextPodcast = DBUtils.getNextPodcast(realmNext, currentPodcastNext.getOrder());
@@ -214,8 +214,8 @@ public class PlayerService extends Service implements
                 realmNext.close();
                 break;
             case PREVIOUS_ACTION:
+                stopMediaPlayback(this);
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
-                pauseMediaPlayback(this);
                 Realm realmPrev = Realm.getDefaultInstance();
                 Podcast currentPodcastPrev = DBUtils.getPodcastByPrimaryKey(realmPrev, activePodcastPrimaryKey);
                 Podcast prevPodcast = DBUtils.getPreviousPodcast(realmPrev, currentPodcastPrev.getOrder());
@@ -257,11 +257,11 @@ public class PlayerService extends Service implements
                     isPaused = true;
                     PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
                 }
-                sendSusupendBroadcast();
+                sendSuspendBroadcast();
                 break;
             case STOP_PLAY_ACTION:
                 clearMediaPlayer();
-                sendSusupendBroadcast();
+                sendSuspendBroadcast();
                 break;
             default:
                 break;
@@ -324,7 +324,7 @@ public class PlayerService extends Service implements
         Intent playPauseIntent = new Intent();
 
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PLAYING) {
-            playPauseIntent.setAction(BROADCAST_SUSUPEND_ACTION);
+            playPauseIntent.setAction(BROADCAST_SUSPEND_ACTION);
             PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             builder.addAction(R.drawable.ic_pause_24dp, "", pendingIntentPlayPause);
         } else {
@@ -382,9 +382,9 @@ public class PlayerService extends Service implements
         manager.sendBroadcast(intent);
     }
 
-    private void sendSusupendBroadcast() {
+    private void sendSuspendBroadcast() {
         Intent intent = new Intent();
-        intent.setAction(BROADCAST_SUSUPEND_ACTION);
+        intent.setAction(BROADCAST_SUSPEND_ACTION);
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
     }

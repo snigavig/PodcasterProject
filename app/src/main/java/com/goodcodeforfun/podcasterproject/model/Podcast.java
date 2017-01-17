@@ -81,7 +81,7 @@ public class Podcast extends RealmObject {
         return downloadProgress == 100;
     }
 
-    public Boolean isDownloadInited() {
+    public Boolean isDownloadInitiated() {
         return downloadProgress != -1;
     }
 

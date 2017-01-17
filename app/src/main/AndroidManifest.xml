@@ -48,7 +48,7 @@
             android:exported="true" />
         <service
             android:name=".sync.SyncManager"
-            android:exported="false"></service>
+            android:exported="false" />
     </application>
 
 </manifest>

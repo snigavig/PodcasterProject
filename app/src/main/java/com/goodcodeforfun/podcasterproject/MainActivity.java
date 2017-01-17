@@ -57,7 +57,9 @@ import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_A
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PROGRESS_UPDATE_ACTION;
-import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_SUSUPEND_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_SUSPEND_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.PAUSED;
+import static com.goodcodeforfun.podcasterproject.PlayerService.PLAYING;
 
 public class MainActivity extends StateUIActivity implements AppCompatSeekBar.OnSeekBarChangeListener,
         View.OnClickListener {
@@ -116,10 +118,11 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         initPodcastTime(mediaFileLengthInMilliseconds);
                         initDetailsPanel();
                     }
+                    setButtonToPlayStateIfPaused();
                     break;
-                case BROADCAST_SUSUPEND_ACTION:
+                case BROADCAST_SUSPEND_ACTION:
                     fabPlayPause.setEnabled(true);
-                    setButtonToPlayState();
+                    setButtonToPausedState();
                     break;
                 case BROADCAST_NEXT_ACTION:
                     initDetailsPanel();
@@ -153,11 +156,19 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     };
 
     private void setButtonToPausedState() {
-        fabPlayPause.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_pause_24dp));
+        fabPlayPause.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_play_arrow_24dp));
+        fabPlayPause.setTag(PAUSED);
     }
 
     private void setButtonToPlayState() {
-        fabPlayPause.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_play_arrow_24dp));
+        fabPlayPause.setImageDrawable(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_pause_24dp));
+        fabPlayPause.setTag(PLAYING);
+    }
+
+    private void setButtonToPlayStateIfPaused() {
+        if (fabPlayPause != null && fabPlayPause.getTag().equals(PAUSED)) {
+            setButtonToPlayState();
+        }
     }
 
     @Override
@@ -199,7 +210,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         if (!"".equals(lastPodcast)) {
             Realm realm = Realm.getDefaultInstance();
             currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, lastPodcast);
-            realm.close();
         }
     }
 
@@ -268,7 +278,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
         IntentFilter playerStateFilter = new IntentFilter();
         playerStateFilter.addAction(BROADCAST_PLAY_ACTION);
-        playerStateFilter.addAction(BROADCAST_SUSUPEND_ACTION);
+        playerStateFilter.addAction(BROADCAST_SUSPEND_ACTION);
         playerStateFilter.addAction(BROADCAST_NEXT_ACTION);
         playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION);
         playerStateFilter.addAction(BROADCAST_PROGRESS_UPDATE_ACTION);
@@ -367,7 +377,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
         final BottomSheetBehavior behavior = BottomSheetBehavior.from(bottomSheet);
 
-        int fabElevation = (int) (getResources().getDimension(R.dimen.fab_elevation) / displayMetrics.density);
         final int visiblePartHeight = (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
                 (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                 (int) (shadowHeight * displayMetrics.density * 2);
@@ -383,6 +392,8 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         UIUtils.setViewMargins(marqueueTitle, 0, 0,
                 (int) ((dpScreenWidth * displayMetrics.density) / 3), 0);
 
+        //fixes fab elevation problem
+        int fabElevation = (int) (getResources().getDimension(R.dimen.fab_elevation) / displayMetrics.density);
         int fabElevationCompensation = 0;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             UIUtils.setViewMargins(fabPlayPause, 0, 0, 0, 0);
@@ -487,14 +498,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private void pauseMediaPlayback() {
         if (fabPlayPause != null && currentPodcast != null) {
             PlayerService.pauseMediaPlayback(MainActivity.this);
-            setButtonToPlayState();
         }
     }
 
     private void startMediaPlayback(boolean isRestore /*should restore previous state*/) {
         if (fabPlayPause != null && currentPodcast != null) {
             PlayerService.startMediaPlayback(MainActivity.this, currentPodcast.getPrimaryKey(), isRestore);
-            setButtonToPausedState();
         }
     }
 
@@ -513,6 +522,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             }
         });
         fabPlayPause = (FloatingActionButton) findViewById(R.id.play_pause_button);
+        fabPlayPause.setTag(PAUSED);
         fabPrevious = (FloatingActionButton) findViewById(R.id.previous_track_button);
         fabNext = (FloatingActionButton) findViewById(R.id.next_track_button);
         fabPlayPause.setOnClickListener(this);
@@ -531,11 +541,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, actionBarStabSize));
 
+        //pushes from bottom to be able to reach the last item in the list
         UIUtils.setViewMargins(podcastsRecyclerView, 0, 0, 0,
                 (int) (UIUtils.getFabSize(this) * displayMetrics.density) +
                         (int) (UIUtils.getFabMargin(this) * displayMetrics.density * 2) +
                         (int) (shadowHeight * displayMetrics.density));
 
+        //moves play/pause button to the right
         fabPlayPause.setTranslationX((dpScreenWidth * displayMetrics.density) / 3);
 
         initDetailsPanel();
