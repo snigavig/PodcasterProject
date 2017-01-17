@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.util.LongSparseArray;
@@ -25,7 +24,6 @@ import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
 
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
@@ -111,8 +109,8 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
 
-            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(getItem(position).getAudioUrl()));
-            if (podcast.isDownloadInited()) {
+            //File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(getItem(position).getAudioUrl()));
+            if (podcast.isDownloadInitiated()) {
                 viewHolder.downloadButton.setPinned(true);
                 int progress = podcast.getDownloadProgress();
                 if (progress != -1) {
@@ -227,6 +225,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     realm.copyToRealmOrUpdate(currentDownloadedPodcast);
                 }
             });
+            realm.close();
             downloadingProgressButtons.append(downloadId, progressButton);
             downloadProgressUpdater(downloadId, true);
         }
