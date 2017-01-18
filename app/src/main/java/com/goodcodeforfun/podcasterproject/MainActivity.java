@@ -54,6 +54,7 @@ import io.realm.RealmResults;
 
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_BUFFERING_UPDATE_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_NEXT_ACTION;
+import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAYBACK_STARTED_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PLAY_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PREVIOUS_ACTION;
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_PROGRESS_UPDATE_ACTION;
@@ -80,8 +81,48 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private PodcastListAdapter mAdapter;
     private AppCompatTextView podcastTime;
     private LinearLayout noDataUI;
+    private AppCompatTextView marqueueTitle;
     private DisplayMetrics displayMetrics;
     private float dpScreenWidth;
+    private final BottomSheetBehavior.BottomSheetCallback bottomSheetBehavior = new BottomSheetBehavior.BottomSheetCallback() {
+        @Override
+        public void onStateChanged(@NonNull View bottomSheet, int newState) {
+
+            switch (newState) {
+                case BottomSheetBehavior.STATE_DRAGGING:
+                    break;
+                case BottomSheetBehavior.STATE_COLLAPSED:
+                    fabPrevious.setClickable(false);
+                    fabNext.setClickable(false);
+                    break;
+                case BottomSheetBehavior.STATE_EXPANDED:
+                    fabPrevious.setClickable(true);
+                    fabNext.setClickable(true);
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+        @Override
+        public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+            float slideOffsetNegative = (1 - slideOffset);
+            float slideOffsetEasingCoefficient = (10 * slideOffsetNegative);
+            float slideOffsetEased = slideOffset / slideOffsetEasingCoefficient;
+            fabPlayPause.setTranslationX(((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative);
+            fabNext.setAlpha(slideOffsetEased);
+            fabPrevious.setAlpha(slideOffsetEased);
+            seekBarProgress.setAlpha(slideOffsetEased);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mActionBar.setElevation(displayMetrics.density * (8 - (slideOffset * 8)));
+            }
+            podcastsRecyclerView.setAlpha(slideOffsetNegative);
+
+            UIUtils.setViewMargins(marqueueTitle, 0, 0,
+                    (int) (((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
+        }
+    };
     private int shadowHeight;
     private int actionBarStabSize;
     private final BroadcastReceiver mSyncStatusReceiver = new BroadcastReceiver() {
@@ -109,14 +150,15 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
             switch (intent.getAction()) {
                 case BROADCAST_PLAY_ACTION:
                     fabPlayPause.setEnabled(true);
-                    mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     String primaryKey = intent.getStringExtra(PlayerService.EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY);
                     Realm realm = Realm.getDefaultInstance();
                     currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, primaryKey);
-
+                    initDetailsPanel();
+                    break;
+                case BROADCAST_PLAYBACK_STARTED_ACTION:
+                    mediaFileLengthInMilliseconds = intent.getIntExtra(PlayerService.EXTRA_PODCAST_TOTAL_TIME_KEY, -1);
                     if (mediaFileLengthInMilliseconds != -1) {
                         initPodcastTime(mediaFileLengthInMilliseconds);
-                        initDetailsPanel();
                     }
                     setButtonToPlayStateIfPaused();
                     break;
@@ -278,6 +320,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
         IntentFilter playerStateFilter = new IntentFilter();
         playerStateFilter.addAction(BROADCAST_PLAY_ACTION);
+        playerStateFilter.addAction(BROADCAST_PLAYBACK_STARTED_ACTION);
         playerStateFilter.addAction(BROADCAST_SUSPEND_ACTION);
         playerStateFilter.addAction(BROADCAST_NEXT_ACTION);
         playerStateFilter.addAction(BROADCAST_PREVIOUS_ACTION);
@@ -358,9 +401,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         final FrameLayout detailsWrap = (FrameLayout) findViewById(R.id.detailsWrap);
         final LinearLayout visiblePart = (LinearLayout) detailsWrap.findViewById(R.id.visiblePart);
         final AppCompatImageView podcastBigImageView = (AppCompatImageView) detailsWrap.findViewById(R.id.podcastBigImageView);
-
-        final AppCompatTextView marqueueTitle = (AppCompatTextView) detailsWrap.findViewById(R.id.marqueeTitle);
-
+        marqueueTitle = (AppCompatTextView) detailsWrap.findViewById(R.id.marqueeTitle);
         podcastCurrentTime = (AppCompatTextView) detailsWrap.findViewById(R.id.podcastCurrentTimeTextView);
 
         if (marqueueTitle != null && currentPodcast != null) {
@@ -406,45 +447,7 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         + actionBarStabSize
                         + (int) (shadowHeight * displayMetrics.density * 2)
                         + fabElevationCompensation);
-        behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
-            @Override
-            public void onStateChanged(@NonNull View bottomSheet, int newState) {
-
-                switch (newState) {
-                    case BottomSheetBehavior.STATE_DRAGGING:
-                        break;
-                    case BottomSheetBehavior.STATE_COLLAPSED:
-                        fabPrevious.setClickable(false);
-                        fabNext.setClickable(false);
-                        break;
-                    case BottomSheetBehavior.STATE_EXPANDED:
-                        fabPrevious.setClickable(true);
-                        fabNext.setClickable(true);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-
-            @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-                float slideOffsetNegative = (1 - slideOffset);
-                float slideOffsetEasingCoefficient = (10 * slideOffsetNegative);
-                float slideOffsetEased = slideOffset / slideOffsetEasingCoefficient;
-                fabPlayPause.setTranslationX(((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative);
-                fabNext.setAlpha(slideOffsetEased);
-                fabPrevious.setAlpha(slideOffsetEased);
-                seekBarProgress.setAlpha(slideOffsetEased);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    mActionBar.setElevation(displayMetrics.density * (8 - (slideOffset * 8)));
-                }
-                podcastsRecyclerView.setAlpha(slideOffsetNegative);
-
-                UIUtils.setViewMargins(marqueueTitle, 0, 0,
-                        (int) (((dpScreenWidth * displayMetrics.density) / 3) * slideOffsetNegative), 0);
-            }
-        });
+        behavior.setBottomSheetCallback(bottomSheetBehavior);
 
         if (currentPodcast != null) {
             Realm realm = Realm.getDefaultInstance();

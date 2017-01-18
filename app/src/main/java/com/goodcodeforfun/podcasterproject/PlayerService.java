@@ -38,6 +38,7 @@ public class PlayerService extends Service implements
     public static final String BROADCAST_PREVIOUS_ACTION = "PlayerService#ACTION_PREVIOUS";
     public static final String BROADCAST_SUSPEND_ACTION = "PlayerService#ACTION_STOP";
     public static final String BROADCAST_PLAY_ACTION = "PlayerService#ACTION_PLAY";
+    public static final String BROADCAST_PLAYBACK_STARTED_ACTION = "PlayerService#ACTION_PLAYBACK_STARTED";
     public static final String BROADCAST_NEXT_ACTION = "PlayerService#ACTION_NEXT";
     public static final String BROADCAST_PROGRESS_UPDATE_ACTION = "PlayerService#ACTION_PROGRESS_UPDATE";
     public static final String BROADCAST_BUFFERING_UPDATE_ACTION = "PlayerService#ACTION_BUFFERING_UPDATE";
@@ -239,14 +240,17 @@ public class PlayerService extends Service implements
                         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
                         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
                         sendPlayBroadcast();
+                        sendPlaybackStartedBroadcast();
                         primaryProgressUpdater();
                     } else {
                         if (!mediaPlayer.isPlaying()) {
                             clearMediaPlayer();
+                            sendPlayBroadcast();
                             prepareMediaPlayer(podcast.getAudioUrl());
                         }
                     }
                 } else {
+                    sendPlayBroadcast();
                     prepareMediaPlayer(podcast.getAudioUrl());
                 }
                 realm.close();
@@ -373,10 +377,17 @@ public class PlayerService extends Service implements
         manager.sendBroadcast(intent);
     }
 
+    private void sendPlaybackStartedBroadcast() {
+        Intent intent = new Intent();
+        intent.setAction(BROADCAST_PLAYBACK_STARTED_ACTION);
+        intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
+    }
+
     private void sendPlayBroadcast() {
         Intent intent = new Intent();
         intent.setAction(BROADCAST_PLAY_ACTION);
-        intent.putExtra(EXTRA_PODCAST_TOTAL_TIME_KEY, mediaFileLengthInMilliseconds);
         intent.putExtra(EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY, activePodcastPrimaryKey);
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.sendBroadcast(intent);
@@ -411,7 +422,6 @@ public class PlayerService extends Service implements
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
-        sendPlayBroadcast();
         if (isRestore) {
             isRestore = false;
             int lastPodcastTime = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcastTime();
@@ -424,6 +434,7 @@ public class PlayerService extends Service implements
         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
         isPaused = false;
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
+        sendPlaybackStartedBroadcast();
         primaryProgressUpdater();
     }
 
