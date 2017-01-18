@@ -7,7 +7,7 @@
 
     <!-- Strings related to Settings -->
 
-    <string name="show_podcast_images_key" translatable="false">show_podcast_images</string>
+    <string name="hide_podcast_images_key" translatable="false">show_podcast_images</string>
 
     <!-- General settings -->
     <string name="pref_header_general">General</string>

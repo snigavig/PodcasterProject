@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import com.goodcodeforfun.podcasterproject.BuildConfig;
 import com.goodcodeforfun.podcasterproject.PlayerService;
 import com.goodcodeforfun.podcasterproject.R;
 
@@ -17,7 +18,7 @@ public class SharedPreferencesUtils {
 
     public SharedPreferencesUtils(Context context) {
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        IS_HIDE_IMAGES_KEY = context.getString(R.string.show_podcast_images_key);
+        IS_HIDE_IMAGES_KEY = context.getString(R.string.hide_podcast_images_key);
     }
 
     public SharedPreferences getPrefs() {
@@ -31,7 +32,7 @@ public class SharedPreferencesUtils {
     }
 
     public boolean isHideImages() {
-        return prefs.getBoolean(IS_HIDE_IMAGES_KEY, false);
+        return prefs.getBoolean(IS_HIDE_IMAGES_KEY, BuildConfig.DEFAULT_IS_HIDE_IMAGES);
     }
 
     public void setHideImages(boolean value) {

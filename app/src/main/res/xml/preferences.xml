@@ -26,8 +26,8 @@
         android:title="Customisations">
 
         <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="@string/show_podcast_images_key"
+            android:defaultValue="@string/default_is_hide_images"
+            android:key="@string/hide_podcast_images_key"
             android:summary="Show or hide podcast images"
             android:title="Hide Podcast Images" />
     </PreferenceCategory>
