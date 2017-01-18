@@ -18,6 +18,10 @@ public class DBUtils {
         return realm.where(Podcast.class).equalTo("audioUrl", primaryKey).findFirst();
     }
 
+    public static Podcast getPodcastByDownloadId(Realm realm, long downloadId) {
+        return realm.where(Podcast.class).equalTo("downloadId", downloadId).findFirst();
+    }
+
     public static Podcast getPodcastByOrder(Realm realm, Integer order) {
         return realm.where(Podcast.class).equalTo("order", order).findFirst();
     }
