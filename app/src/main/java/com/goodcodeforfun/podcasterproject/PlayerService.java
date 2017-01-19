@@ -152,6 +152,7 @@ public class PlayerService extends Service implements
             mediaPlayer.reset();
             mediaPlayer = null;
         }
+        releaseWakeLock();
     }
 
     private void prepareMediaPlayer(String audioUrl) {
@@ -228,11 +229,6 @@ public class PlayerService extends Service implements
                 Realm realm = Realm.getDefaultInstance();
                 Podcast podcast = DBUtils.getPodcastByPrimaryKey(realm, activePodcastPrimaryKey);
                 activePodcastName = podcast.getTitle();
-                PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-                mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
-                if (!mWakeLock.isHeld()) {
-                    mWakeLock.acquire();
-                }
                 if (null != mediaPlayer) {
                     if (isPaused) {
                         isPaused = false;
@@ -272,6 +268,26 @@ public class PlayerService extends Service implements
         }
     }
 
+    private void acquireWakeLock() {
+        if (mWakeLock == null) {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
+        }
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
+    }
+
+    private void releaseWakeLock() {
+        if (mWakeLock == null) {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
+        }
+        if (mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
+    }
+
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
         if (intent != null) {
@@ -288,9 +304,7 @@ public class PlayerService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-        if (mWakeLock.isHeld()) {
-            mWakeLock.release();
-        }
+        releaseWakeLock();
         Foreground.get(this).removeListener(myListener);
     }
 
@@ -429,7 +443,7 @@ public class PlayerService extends Service implements
                 mediaPlayer.seekTo(lastPodcastTime);
             }
         }
-
+        acquireWakeLock();
         mediaPlayer.start();
         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
         isPaused = false;
