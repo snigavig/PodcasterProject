@@ -150,7 +150,6 @@ public class PlayerService extends Service implements
                 PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
             }
             mediaPlayer.reset();
-            mediaPlayer = null;
         }
         releaseWakeLock();
     }
@@ -304,7 +303,8 @@ public class PlayerService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-        releaseWakeLock();
+        clearMediaPlayer();
+        mediaPlayer = null;
         Foreground.get(this).removeListener(myListener);
     }
 
