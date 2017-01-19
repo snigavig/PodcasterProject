@@ -41,4 +41,5 @@
     <string name="restore_confirmation_dialog_content">Your last session was interrupted, do you want to proceed from the last position?</string>
     <string name="restore_confirmation_dialog_title">Session interrupted</string>
     <string name="no_data_ui_text">No data, please retry…</string>
+    <string name="no_internet_message">You have no internet...</string>
 </resources>

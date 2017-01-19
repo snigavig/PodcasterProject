@@ -3,6 +3,7 @@ package com.goodcodeforfun.podcasterproject.sync;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
 import com.firebase.jobdispatcher.Job;
@@ -42,6 +43,11 @@ public class SyncManager extends IntentService {
     public static void stopSyncPodcastsTask() {
         Log.d(TAG, "stopSyncPodcastsTask");
         PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().cancel(SyncTasksService.TASK_TAG_SYNC_PODCASTS);
+    }
+
+    public static boolean isNetworkConnected(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo() != null;
     }
 
     @Override

@@ -18,9 +18,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.goodcodeforfun.podcasterproject.model.Podcast;
+import com.goodcodeforfun.podcasterproject.sync.SyncManager;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.Foreground;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
+import com.goodcodeforfun.stateui.StateUIActivity;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -165,6 +167,10 @@ public class PlayerService extends Service implements
             if (file.isFile()) {
                 dataSource = filePath;
             } else {
+                if (!SyncManager.isNetworkConnected(PodcasterProjectApplication.getInstance())) {
+                    StateUIActivity.showSimpleToast(getString(R.string.no_internet_message));
+                    return;
+                }
                 dataSource = audioUrl;
             }
             mediaPlayer.setDataSource(dataSource);
