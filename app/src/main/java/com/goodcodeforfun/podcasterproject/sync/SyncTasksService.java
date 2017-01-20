@@ -14,9 +14,9 @@ import com.firebase.jobdispatcher.JobService;
 import com.firebase.jobdispatcher.SimpleJobService;
 import com.goodcodeforfun.podcasterproject.BuildConfig;
 import com.goodcodeforfun.podcasterproject.PodcasterProjectApplication;
+import com.goodcodeforfun.podcasterproject.R;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
-import com.goodcodeforfun.stateui.StateUIApplication;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -112,23 +112,23 @@ public class SyncTasksService extends SimpleJobService {
                 }
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();
-                StateUIApplication.onError();
+                PodcasterProjectApplication.onError(PodcasterProjectApplication.getInstance().getString(R.string.parsing_error_message));
                 return retryAction();
             } finally {
                 realm.close();
             }
 
             if (response.code() != 200) {
-                StateUIApplication.onError();
+                PodcasterProjectApplication.onError(PodcasterProjectApplication.getInstance().getString(R.string.network_error_message));
                 return retryAction();
             }
         } catch (IOException e) {
-            StateUIApplication.onError();
+            PodcasterProjectApplication.onError(PodcasterProjectApplication.getInstance().getString(R.string.network_error_message));
             Log.e(TAG, "fetchUrl:error" + e.toString());
             return retryAction();
         }
 
-        StateUIApplication.onSuccess();
+        PodcasterProjectApplication.onSuccess();
         return JobService.RESULT_SUCCESS;
     }
 

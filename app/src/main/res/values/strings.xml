@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Podcaster Launcher</string>
     <string name="download_description">Saving podcast for offline use</string>
-    <string name="download_title">Downloading…</string>
     <string name="content_description_cover_image">Cover image</string>
     <string name="title_activity_settings">Settings</string>
 
@@ -41,5 +40,7 @@
     <string name="restore_confirmation_dialog_content">Your last session was interrupted, do you want to proceed from the last position?</string>
     <string name="restore_confirmation_dialog_title">Session interrupted</string>
     <string name="no_data_ui_text">No data, please retry…</string>
-    <string name="no_internet_message">You have no internet...</string>
+    <string name="no_internet_message">You have no internet…</string>
+    <string name="network_error_message">Network error</string>
+    <string name="parsing_error_message">Parsing error</string>
 </resources>

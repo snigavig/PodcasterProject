@@ -373,8 +373,8 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     }
 
     @Override
-    public void onErrorUI() {
-        showSimpleToast("Error");
+    protected void onErrorUI(String message) {
+        showSimpleToast(message);
     }
 
     private void initSeekBar() {

@@ -217,10 +217,9 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             manager = (DownloadManager) activity.getSystemService(Context.DOWNLOAD_SERVICE);
         }
         if (downloadPodcastUrl != null && currentProgressButton != null) {
-            final long downloadId = StorageUtils.downloadFile(activity, downloadPodcastUrl);
             Realm realm = Realm.getDefaultInstance();
             final Podcast currentDownloadedPodcast = DBUtils.getPodcastByPrimaryKey(realm, downloadPodcastUrl);
-
+            final long downloadId = StorageUtils.downloadFile(activity, downloadPodcastUrl, currentDownloadedPodcast.getTitle());
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute(Realm realm) {

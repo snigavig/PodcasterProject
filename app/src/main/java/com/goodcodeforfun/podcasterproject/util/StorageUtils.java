@@ -31,10 +31,10 @@ public class StorageUtils {
                 StorageUtils.STORAGE_PERMISSIONS);
     }
 
-    public static long downloadFile(Context context, String downloadPodcastUrl) {
+    public static long downloadFile(Context context, String downloadPodcastUrl, String title) {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadPodcastUrl));
         request.setDescription(context.getString(R.string.download_description));
-        request.setTitle(context.getString(R.string.download_title));
+        request.setTitle(title);
         request.allowScanningByMediaScanner();
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PODCASTS, StorageUtils.getFileNameFromUrl(downloadPodcastUrl));
