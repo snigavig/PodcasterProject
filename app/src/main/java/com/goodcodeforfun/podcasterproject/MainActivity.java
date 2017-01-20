@@ -49,7 +49,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
-import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 
 import static com.goodcodeforfun.podcasterproject.PlayerService.BROADCAST_BUFFERING_UPDATE_ACTION;
@@ -129,16 +128,12 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(SyncTasksService.ACTION_SYNC_PODCASTS_DONE)) {
-                if (mAdapter != null) {
-                    mAdapter.notifyDataSetChanged();
+                onStopProgress();
+                int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
+                if (result != -1 && result == JobService.RESULT_SUCCESS) {
+                    populateUI();
                 } else {
-                    onStopProgress();
-                    int result = intent.getIntExtra(SyncTasksService.EXTRA_RESULT, -1);
-                    if (result != -1 && result == JobService.RESULT_SUCCESS) {
-                        populateUI();
-                    } else {
-                        onNoData();
-                    }
+                    onNoData();
                 }
             }
         }
@@ -278,13 +273,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     }
 
     private void processPodcastsRealm(RealmResults<Podcast> podcastRawList) {
-        podcastRawList.addChangeListener(new RealmChangeListener<RealmResults<Podcast>>() {
-            @Override
-            public void onChange(RealmResults<Podcast> podcastRawList) {
-                Log.e(TAG, "SOMETHINGS CHANGED IN PODCASTS REALM");
-                processPodcastsRealm(podcastRawList);
-            }
-        });
         ArrayList<Podcast> podcastList = new ArrayList<>();
         for (Podcast podcast : podcastRawList) {
             Log.e(TAG, podcast.toString());
@@ -409,7 +397,11 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
             Glide.with(this)
                     .load(currentPodcast.getImageUrl())
-                    .placeholder(R.color.colorPrimaryHalfTransparent)
+                    .placeholder(
+                            BuildConfig.DEFAULT_IS_HIDE_IMAGES
+                                    ? R.drawable.header_image
+                                    : R.color.colorPrimaryHalfTransparent
+                    )
                     .into(podcastBigImageView);
         }
         initSeekBar();

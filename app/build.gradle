@@ -62,6 +62,13 @@ android {
             buildConfigField 'boolean', 'DEFAULT_IS_HIDE_IMAGES', 'false'
             resValue 'string', 'default_is_hide_images', '"false"'
         }
+        //noinspection GroovyMissingReturnStatement
+        kdicast {
+            applicationId 'com.goodcodeforfun.podcasterproject.kdicast'
+            buildConfigField 'String', 'PODCAST_URL', '"http://feeds.feedburner.com/Galyonkin-pod"'
+            buildConfigField 'boolean', 'DEFAULT_IS_HIDE_IMAGES', 'true'
+            resValue 'string', 'default_is_hide_images', '"true"'
+        }
     }
 }
 

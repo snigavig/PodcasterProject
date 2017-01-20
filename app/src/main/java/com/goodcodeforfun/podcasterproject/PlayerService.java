@@ -206,9 +206,11 @@ public class PlayerService extends Service implements
             case SEEK_ACTION:
                 int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
                 if (progress != -1) {
-                    int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
-                    mediaPlayer.seekTo(playPositionInMilliseconds);
-                    sendUpdateBroadcast();
+                    if (mediaPlayer != null) {
+                        int playPositionInMilliseconds = (mediaFileLengthInMilliseconds / 100) * progress;
+                        mediaPlayer.seekTo(playPositionInMilliseconds);
+                        sendUpdateBroadcast();
+                    }
                 }
                 break;
             case NEXT_ACTION:

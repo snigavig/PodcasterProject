@@ -43,4 +43,6 @@
     <string name="no_internet_message">You have no internet…</string>
     <string name="network_error_message">Network error</string>
     <string name="parsing_error_message">Parsing error</string>
+    <string name="stateui_default_progress_dialog_title">Loading podcasts</string>
+    <string name="stateui_default_progress_dialog_message">Hold tight!</string>
 </resources>

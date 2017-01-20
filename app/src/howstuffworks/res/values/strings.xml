@@ -1,5 +1,3 @@
 <resources>
     <string name="app_name">Stuff You Should Know Podcast</string>
-    <string name="stateui_default_progress_dialog_title">Loading podcasts</string>
-    <string name="stateui_default_progress_dialog_message">Hold tight!</string>
 </resources>

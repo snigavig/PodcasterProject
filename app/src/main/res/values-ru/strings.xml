@@ -1,0 +1,34 @@
+<resources>
+    <string name="stateui_default_progress_dialog_title">Качаем подкасты</string>
+    <string name="stateui_default_progress_dialog_message">Подождите немного</string>
+    <string name="no_data_ui_text">Нет подкастов, пожалуйста попробуйте еще раз…</string>
+    <string name="download_description">Сохраняем подкаст</string>
+    <string name="title_activity_settings">Настройки</string>
+
+    <!-- General settings -->
+    <string name="pref_header_general">Общие</string>
+
+    <!-- Settings for Data & Sync -->
+    <string name="pref_header_data_sync">Синхронизация</string>
+
+    <string name="pref_title_sync_frequency">Частота синхронизации</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 минут</item>
+        <item>30 минут</item>
+        <item>1 час</item>
+        <item>3 часа</item>
+        <item>6 часов</item>
+        <item>Never</item>
+    </string-array>
+
+    <string name="pref_title_system_sync_settings">Системные настройки синхронизации</string>
+
+    <string name="action_settings">Настройки</string>
+    <string name="restore_confirmation_dialog_negative_text">Нет</string>
+    <string name="restore_confirmation_dialog_positive_text">Да</string>
+    <string name="restore_confirmation_dialog_content">Последняя сессия была прервана, хотите продолжить с последнего места?</string>
+    <string name="restore_confirmation_dialog_title">Сессия былв прервана</string>
+    <string name="no_internet_message">У вас нет интернета…</string>
+    <string name="network_error_message">Ошибка сети</string>
+    <string name="parsing_error_message">Ошибка парсинга</string>
+</resources>
