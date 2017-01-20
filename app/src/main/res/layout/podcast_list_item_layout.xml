@@ -48,5 +48,8 @@
         android:layout_centerVertical="true"
         android:layout_margin="5dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="5dp" />
+        android:gravity="center"
+        android:padding="5dp"
+        app:pinnedDrawable="@drawable/ic_pinned_with_padding"
+        app:unpinnedDrawable="@drawable/ic_unpinned_with_padding" />
 </RelativeLayout>
