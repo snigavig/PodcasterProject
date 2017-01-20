@@ -45,4 +45,5 @@
     <string name="parsing_error_message">Parsing error</string>
     <string name="stateui_default_progress_dialog_title">Loading podcasts</string>
     <string name="stateui_default_progress_dialog_message">Hold tight!</string>
+    <string name="action_refresh">Sync podcasts</string>
 </resources>

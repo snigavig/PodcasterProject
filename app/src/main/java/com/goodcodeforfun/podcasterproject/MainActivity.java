@@ -339,19 +339,24 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_settings) {
-            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-            return true;
-        } else {
-            // If we got here, the user's action was not recognized.
-            // Invoke the superclass to handle it.
-            return super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                return true;
+            case R.id.action_refresh:
+                onProgress();
+                SyncManager.startActionSyncPodcastsImmediately(MainActivity.this);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
     }
 
     @Override
     protected void onNoDataUI() {
-        noDataUI.setVisibility(View.VISIBLE);
+        if (mAdapter == null || mAdapter.getItemCount() == 0) {
+            noDataUI.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
