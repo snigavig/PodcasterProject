@@ -13,6 +13,7 @@ import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 import com.firebase.jobdispatcher.SimpleJobService;
 import com.goodcodeforfun.podcasterproject.BuildConfig;
+import com.goodcodeforfun.podcasterproject.PodcasterProjectApplication;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.stateui.StateUIApplication;
@@ -112,23 +113,33 @@ public class SyncTasksService extends SimpleJobService {
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();
                 StateUIApplication.onError();
-                return JobService.RESULT_FAIL_NORETRY;
+                return retryAction();
             } finally {
                 realm.close();
             }
 
             if (response.code() != 200) {
                 StateUIApplication.onError();
-                return JobService.RESULT_FAIL_NORETRY;
+                return retryAction();
             }
         } catch (IOException e) {
             StateUIApplication.onError();
             Log.e(TAG, "fetchUrl:error" + e.toString());
-            return JobService.RESULT_FAIL_NORETRY;
+            return retryAction();
         }
 
         StateUIApplication.onSuccess();
         return JobService.RESULT_SUCCESS;
+    }
+
+    private static
+    @JobResult
+    int retryAction() {
+        if (SyncManager.isNetworkConnected(PodcasterProjectApplication.getInstance())) {
+            return JobService.RESULT_FAIL_RETRY;
+        } else {
+            return JobService.RESULT_FAIL_NORETRY;
+        }
     }
 
     @Override
