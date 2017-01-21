@@ -6,4 +6,5 @@
     <color name="colorAccent">#C80133</color>
     <color name="colorBackground">@android:color/background_light</color>
     <color name="textColor">@android:color/primary_text_dark</color>
+    <color name="subTextColor">#b1b1b1</color>
 </resources>

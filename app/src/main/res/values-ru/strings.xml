@@ -1,29 +1,11 @@
 <resources>
-    <string name="stateui_default_progress_dialog_title">Качаем подкасты</string>
+    <string name="app_name">Подкастер</string>
+    <string name="content_description_cover_image">Логотип канала</string>
+    <string name="stateui_default_progress_dialog_title">Качаем подкаст</string>
     <string name="stateui_default_progress_dialog_message">Подождите немного</string>
     <string name="no_data_ui_text">Нет подкастов, пожалуйста попробуйте еще раз…</string>
     <string name="download_description">Сохраняем подкаст</string>
     <string name="title_activity_settings">Настройки</string>
-
-    <!-- General settings -->
-    <string name="pref_header_general">Общие</string>
-
-    <!-- Settings for Data & Sync -->
-    <string name="pref_header_data_sync">Синхронизация</string>
-
-    <string name="pref_title_sync_frequency">Частота синхронизации</string>
-    <string-array name="pref_sync_frequency_titles">
-        <item>15 минут</item>
-        <item>30 минут</item>
-        <item>1 час</item>
-        <item>3 часа</item>
-        <item>6 часов</item>
-        <item>Never</item>
-    </string-array>
-
-    <string name="pref_title_system_sync_settings">Системные настройки синхронизации</string>
-
-    <string name="action_settings">Настройки</string>
     <string name="restore_confirmation_dialog_negative_text">Нет</string>
     <string name="restore_confirmation_dialog_positive_text">Да</string>
     <string name="restore_confirmation_dialog_content">Последняя сессия была прервана, хотите продолжить с последнего места?</string>
@@ -32,4 +14,15 @@
     <string name="network_error_message">Ошибка сети</string>
     <string name="parsing_error_message">Ошибка парсинга</string>
     <string name="action_refresh">Синхронизировать</string>
+    <string name="action_settings">Настройки</string>
+
+    <!-- Strings related to Settings -->
+    <string name="sync_section_title">Настройки сонихронищации</string>
+    <string name="auto_sync_title">Автоматическая синхронизация</string>
+    <string name="auto_sync_summary">Включить или выключить автоматическую синхронизацию</string>
+    <string name="auto_sync_interval_title">Период синхронизации</string>
+    <string name="auto_sync_interval_summary">Установате, как часто проводить синхронизацию</string>
+    <string name="custom_section_title">Персонализация</string>
+    <string name="hide_podcast_images_title">Спрятать картинки подкастов</string>
+    <string name="hide_podcast_images_summary">Показать или спрятать картинки подкастов</string>
 </resources>

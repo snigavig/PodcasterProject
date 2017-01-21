@@ -27,6 +27,7 @@ import com.goodcodeforfun.stateui.StateUIActivity;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.realm.Realm;
 
@@ -77,8 +78,8 @@ public class PlayerService extends Service implements
     private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
-    private boolean isPaused = true;
     private boolean isRestore = false;
+    private AtomicBoolean isPaused = new AtomicBoolean(true);
     private String activePodcastName;
     private String activePodcastPrimaryKey;
 
@@ -146,13 +147,14 @@ public class PlayerService extends Service implements
 
     private void clearMediaPlayer() {
         if (mediaPlayer != null) {
-            if (mediaPlayer.isPlaying() || isPaused) {
-                isPaused = false;
+            if (mediaPlayer.isPlaying() || isPaused.get()) {
+                isPaused.set(false);
                 mediaPlayer.stop();
                 PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
             }
             mediaPlayer.reset();
         }
+        mediaPlayer = null;
         releaseWakeLock();
     }
 
@@ -237,8 +239,8 @@ public class PlayerService extends Service implements
                 Podcast podcast = DBUtils.getPodcastByPrimaryKey(realm, activePodcastPrimaryKey);
                 activePodcastName = podcast.getTitle();
                 if (null != mediaPlayer) {
-                    if (isPaused) {
-                        isPaused = false;
+                    if (isPaused.get()) {
+                        isPaused.set(false);
                         mediaPlayer.start();
                         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
                         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
@@ -253,6 +255,7 @@ public class PlayerService extends Service implements
                         }
                     }
                 } else {
+                    clearMediaPlayer();
                     sendPlayBroadcast();
                     prepareMediaPlayer(podcast.getAudioUrl());
                 }
@@ -261,7 +264,7 @@ public class PlayerService extends Service implements
             case PAUSE_PLAY_ACTION:
                 if (mediaPlayer != null) {
                     mediaPlayer.pause();
-                    isPaused = true;
+                    isPaused.set(true);
                     PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
                 }
                 sendSuspendBroadcast();
@@ -312,7 +315,6 @@ public class PlayerService extends Service implements
     public void onDestroy() {
         super.onDestroy();
         clearMediaPlayer();
-        mediaPlayer = null;
         Foreground.get(this).removeListener(myListener);
     }
 
@@ -453,8 +455,8 @@ public class PlayerService extends Service implements
         }
         acquireWakeLock();
         mediaPlayer.start();
+        isPaused.set(false);
         startForegroundPlayerService(PodcasterProjectApplication.getInstance());
-        isPaused = false;
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
         sendPlaybackStartedBroadcast();
         primaryProgressUpdater();
