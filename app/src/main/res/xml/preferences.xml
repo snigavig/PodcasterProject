@@ -6,16 +6,16 @@
 
         <CheckBoxPreference
             android:defaultValue="true"
-            android:key="perform_sync"
+            android:key="@string/perform_sync_key"
             android:summary="@string/auto_sync_summary"
             android:title="@string/auto_sync_title" />
 
         <ListPreference
-            android:defaultValue="1000"
-            android:dependency="perform_sync"
-            android:entries="@array/updateInterval"
-            android:entryValues="@array/updateIntervalValues"
-            android:key="sync_interval"
+            android:defaultValue="@string/default_sync_interval"
+            android:dependency="@string/perform_sync_key"
+            android:entries="@array/update_interval"
+            android:entryValues="@array/update_interval_values"
+            android:key="@string/sync_interval_key"
             android:summary="@string/auto_sync_interval_summary"
             android:title="@string/auto_sync_interval_title" />
 

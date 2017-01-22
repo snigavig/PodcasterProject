@@ -1,8 +1,8 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Подкастер</string>
     <string name="content_description_cover_image">Логотип канала</string>
-    <string name="stateui_default_progress_dialog_title">Качаем подкаст</string>
-    <string name="stateui_default_progress_dialog_message">Подождите немного</string>
+    <string name="stateui_default_progress_dialog_title" tools:ignore="UnusedResources">Качаем подкаст</string>
+    <string name="stateui_default_progress_dialog_message" tools:ignore="UnusedResources">Подождите немного</string>
     <string name="no_data_ui_text">Нет подкастов, пожалуйста попробуйте еще раз…</string>
     <string name="download_description">Сохраняем подкаст</string>
     <string name="title_activity_settings">Настройки</string>
@@ -25,4 +25,8 @@
     <string name="custom_section_title">Персонализация</string>
     <string name="hide_podcast_images_title">Спрятать картинки подкастов</string>
     <string name="hide_podcast_images_summary">Показать или спрятать картинки подкастов</string>
+    <string name="update_interval_6_hours">6 часов</string>
+    <string name="update_interval_12_hours">12 часов</string>
+    <string name="update_interval_day">день</string>
+    <string name="update_interval_week">неделя</string>
 </resources>

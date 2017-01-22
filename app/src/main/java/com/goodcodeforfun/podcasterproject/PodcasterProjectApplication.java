@@ -37,7 +37,12 @@ public class PodcasterProjectApplication extends StateUIApplication {
         Realm.init(this);
         Stetho.initializeWithDefaults(this);
         mFirebaseJobDispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
-        SyncManager.startSyncPodcastsTask();
+        if (getSharedPreferencesUtils().isPerformSync()) {
+            int syncInterval = getSharedPreferencesUtils().getSyncInterval();
+            if (syncInterval != -1) {
+                SyncManager.startSyncPodcastsTask(syncInterval);
+            }
+        }
     }
 
     @SuppressWarnings("EmptyMethod")

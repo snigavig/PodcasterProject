@@ -107,8 +107,6 @@ public class SyncTasksService extends SimpleJobService {
                             realm.copyToRealmOrUpdate(podcast);
                         }
                     });
-
-                    Log.i(TAG, "Item order: " + itemOrder);
                 }
             } catch (XmlPullParserException | IOException | DataFormatException e) {
                 e.printStackTrace();

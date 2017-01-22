@@ -28,13 +28,13 @@ public class SyncManager extends IntentService {
         context.startService(intent);
     }
 
-    public static void startSyncPodcastsTask() {
+    public static void startSyncPodcastsTask(int syncInterval) {
         Log.d(TAG, "startSyncPodcastsTask");
         Job task = PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().newJobBuilder()
                 .setService(SyncTasksService.class)
                 .setTag(SyncTasksService.TASK_TAG_SYNC_PODCASTS)
                 .setRecurring(true)
-                .setTrigger(Trigger.executionWindow(0, 180))
+                .setTrigger(Trigger.executionWindow(syncInterval * 3600 - 60, syncInterval * 3600))
                 .build();
 
         PodcasterProjectApplication.getInstance().getFirebaseJobDispatcher().schedule(task);

@@ -1,8 +1,8 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Podcaster Launcher</string>
     <string name="content_description_cover_image">Chanel logo</string>
-    <string name="stateui_default_progress_dialog_title">Loading podcasts</string>
-    <string name="stateui_default_progress_dialog_message">Hold tight!</string>
+    <string name="stateui_default_progress_dialog_title" tools:ignore="UnusedResources">Loading podcasts</string>
+    <string name="stateui_default_progress_dialog_message" tools:ignore="UnusedResources">Hold tight!</string>
     <string name="no_data_ui_text">No data, please retry…</string>
     <string name="download_description">Saving podcast for offline use</string>
     <string name="title_activity_settings">Settings</string>
@@ -25,9 +25,16 @@
     <string name="custom_section_title">Customisations</string>
     <string name="hide_podcast_images_title">Hide Podcast Images</string>
     <string name="hide_podcast_images_summary">Show or hide podcast images</string>
+    <string name="update_interval_6_hours">6 hours</string>
+    <string name="update_interval_12_hours">12 hours</string>
+    <string name="update_interval_day">day</string>
+    <string name="update_interval_week">week</string>
 
     <!-- No translation needed -->
     <string name="hide_podcast_images_key" translatable="false">show_podcast_images</string>
-    <string name="default_current_time">00:00:00</string>
-    <string name="default_total_time">--:--:--</string>
+    <string name="sync_interval_key" translatable="false">sync_interval</string>
+    <string name="perform_sync_key" translatable="false">perform_sync</string>
+    <string name="default_current_time" translatable="false">00:00:00</string>
+    <string name="default_total_time" translatable="false">--:--:--</string>
+    <string name="default_sync_interval" translatable="false">12</string>
 </resources>

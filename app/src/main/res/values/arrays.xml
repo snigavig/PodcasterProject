@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="updateInterval">
-        <item>daily</item>
-        <item>weekly</item>
-        <item>monthly</item>
+    <string-array name="update_interval" translatable="false">
+        <item>@string/update_interval_6_hours</item>
+        <item>@string/update_interval_12_hours</item>
+        <item>@string/update_interval_day</item>
+        <item>@string/update_interval_week</item>
     </string-array>
-    <string-array name="updateIntervalValues">
-        <item>1</item>
-        <item>7</item>
-        <item>30</item>
+    <string-array name="update_interval_values" translatable="false">
+        <item>6</item>
+        <item>12</item>
+        <item>24</item>
+        <item>168</item>
     </string-array>
 </resources>

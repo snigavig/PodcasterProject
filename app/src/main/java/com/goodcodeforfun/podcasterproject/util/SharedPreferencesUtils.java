@@ -14,11 +14,17 @@ public class SharedPreferencesUtils {
     private static final String LAST_PODCAST_KEY = "LAST_PODCAST";
     private static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
     private final String IS_HIDE_IMAGES_KEY;
+    private final String IS_PERFORM_SYNC_KEY;
+    private final String SYNC_INTERVAL_KEY;
+    private final String DEFAULT_SYNC_INTERVAL;
     private final SharedPreferences prefs;
 
     public SharedPreferencesUtils(Context context) {
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
         IS_HIDE_IMAGES_KEY = context.getString(R.string.hide_podcast_images_key);
+        IS_PERFORM_SYNC_KEY = context.getString(R.string.perform_sync_key);
+        SYNC_INTERVAL_KEY = context.getString(R.string.sync_interval_key);
+        DEFAULT_SYNC_INTERVAL = context.getString(R.string.default_sync_interval);
     }
 
     public SharedPreferences getPrefs() {
@@ -35,12 +41,13 @@ public class SharedPreferencesUtils {
         return prefs.getBoolean(IS_HIDE_IMAGES_KEY, BuildConfig.DEFAULT_IS_HIDE_IMAGES);
     }
 
-    public void setHideImages(boolean value) {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(IS_HIDE_IMAGES_KEY, value);
-        editor.apply();
+    public boolean isPerformSync() {
+        return prefs.getBoolean(IS_PERFORM_SYNC_KEY, true);
     }
 
+    public int getSyncInterval() {
+        return Integer.parseInt(prefs.getString(SYNC_INTERVAL_KEY, DEFAULT_SYNC_INTERVAL));
+    }
 
     public int getLastState() {
         return prefs.getInt(LAST_STATE_KEY, PlayerService.PAUSED);

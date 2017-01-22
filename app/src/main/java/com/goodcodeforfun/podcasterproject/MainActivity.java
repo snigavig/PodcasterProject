@@ -22,7 +22,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -275,7 +274,6 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private void processPodcastsRealm(RealmResults<Podcast> podcastRawList) {
         ArrayList<Podcast> podcastList = new ArrayList<>();
         for (Podcast podcast : podcastRawList) {
-            Log.e(TAG, podcast.toString());
             podcastList.add(podcast);
         }
         mAdapter = new PodcastListAdapter(MainActivity.this, podcastList);
