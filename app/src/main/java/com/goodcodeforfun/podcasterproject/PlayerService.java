@@ -65,21 +65,25 @@ public class PlayerService extends Service implements
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
     private final Handler handler = new Handler();
-    private final Foreground.Listener myListener = new Foreground.Listener() {
-        public void onBecameForeground() {
-            //initSeekBar();
-        }
-
-        public void onBecameBackground() {
-            //seekBarProgress = null;
-        }
-    };
     private int updateCount = 0;
     private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
     private boolean isRestore = false;
     private AtomicBoolean isPaused = new AtomicBoolean(true);
+    private AtomicBoolean isForeground = new AtomicBoolean(true);
+    private final Foreground.Listener myListener = new Foreground.Listener() {
+        public void onBecameForeground() {
+            isForeground.set(true);
+            if (!isPaused.get()) {
+                primaryProgressUpdater();
+            }
+        }
+
+        public void onBecameBackground() {
+            isForeground.set(false);
+        }
+    };
     private String activePodcastName;
     private String activePodcastPrimaryKey;
 
@@ -425,7 +429,8 @@ public class PlayerService extends Service implements
     }
 
     private void primaryProgressUpdater() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying() && isForeground.get()) {
+            Log.e("Yoo", " trying to update progress");
             //save current time every 5 seconds.
             if (updateCount >= 5) {
                 updateCount = 0;
