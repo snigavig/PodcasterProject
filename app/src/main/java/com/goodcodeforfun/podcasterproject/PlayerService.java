@@ -430,7 +430,6 @@ public class PlayerService extends Service implements
 
     private void primaryProgressUpdater() {
         if (mediaPlayer != null && mediaPlayer.isPlaying() && isForeground.get()) {
-            Log.e("Yoo", " trying to update progress");
             //save current time every 5 seconds.
             if (updateCount >= 5) {
                 updateCount = 0;
