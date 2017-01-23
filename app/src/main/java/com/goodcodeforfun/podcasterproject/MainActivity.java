@@ -345,6 +345,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                 onProgress();
                 SyncManager.startActionSyncPodcastsImmediately(MainActivity.this);
                 return true;
+            case R.id.action_about_podcast:
+                new MaterialDialog.Builder(this)
+                        .title(R.string.action_about)
+                        .customView(R.layout.about_podcast_view, true)
+                        .positiveText(R.string.ok_button_text)
+                        .show();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }

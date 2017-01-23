@@ -13,8 +13,10 @@
     <string name="no_internet_message">У вас нет интернета…</string>
     <string name="network_error_message">Ошибка сети</string>
     <string name="parsing_error_message">Ошибка парсинга</string>
+    <string name="about_content">Подкастер это еще один агрегатор подкастов просто для фана.</string>
     <string name="action_refresh">Синхронизировать</string>
     <string name="action_settings">Настройки</string>
+    <string name="action_about">О подкастере</string>
 
     <!-- Strings related to Settings -->
     <string name="sync_section_title">Настройки сонихронищации</string>

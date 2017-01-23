@@ -11,4 +11,9 @@
         android:title="@string/action_refresh"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_about_podcast"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
 </menu>

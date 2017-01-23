@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">ETC Podcast</string>
+    <string name="about_content">
+        Welcome to ETC!!\n
+        This is a YouTube channel for all things Entertainment, Tech, and Culture complete with a hefty dose of sarcasm!\n
+        Weekly shows include:\n
+            - News Squirts\n
+            - Tech Tuesday\n
+            - Weekly Weird News\n
+            - T.U.G.S. - Totally Uninformed Gaming Show\n
+            - News Dump!\n\n
+        and of course…the ETC Podcast!\n\n
+        Follow the hosts on twitter:\n
+        http://twitter.com/RickyFTW\n
+        http://twitter.com/EliotETC\n\n
+        Subscribe on YouTube:\n
+        https://www.youtube.com/user/MachinimaETC
+    </string>
+
 </resources>

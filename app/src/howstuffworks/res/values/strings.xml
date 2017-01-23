@@ -1,3 +1,6 @@
 <resources>
-    <string name="app_name">Stuff You Should Know Podcast</string>
+    <string name="app_name">Stuff You Should Know</string>
+    <string name="about_content">
+        Join Josh and Chuck as they explore the Stuff You Should Know about everything from genes to the Galapagos in this podcast from http://www.stuffyoushouldknow.com/podcasts.
+    </string>
 </resources>

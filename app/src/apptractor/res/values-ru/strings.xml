@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_content">
+        Android Dev — подкаст о разработке под Android и всем, что с этим связано.\n\n
+        Гости программы — разработчики с большим опытом и стажем, которые помнят Android, когда он еще был версии 1.5, и за годы написали приложения для миллионов пользователей по всему миру.\n
+        http://androiddev.apptractor.ru/
+    </string>
+</resources>
