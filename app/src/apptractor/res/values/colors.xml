@@ -3,7 +3,7 @@
     <color name="colorPrimary">#545454</color>
     <color name="colorPrimaryHalfTransparent">#50545454</color>
     <color name="colorPrimaryDark">#313131</color>
-    <color name="colorAccent">#FFFFFF</color>
+    <color name="colorAccent">#FE8F40</color>
     <color name="colorBackground">@android:color/background_light</color>
     <color name="textColor">@android:color/primary_text_light</color>
 </resources>
