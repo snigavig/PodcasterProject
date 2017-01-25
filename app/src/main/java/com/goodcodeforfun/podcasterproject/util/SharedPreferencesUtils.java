@@ -13,6 +13,7 @@ public class SharedPreferencesUtils {
     private static final String LAST_STATE_KEY = "LAST_STATE";
     private static final String LAST_PODCAST_KEY = "LAST_PODCAST";
     private static final String LAST_PODCAST_TIME_KEY = "LAST_PODCAST_TIME";
+    private static final String LAST_PODCAST_TOTAL_TIME_KEY = "LAST_PODCAST_TOTAL_TIME";
     private final String IS_HIDE_IMAGES_KEY;
     private final String IS_PERFORM_SYNC_KEY;
     private final String SYNC_INTERVAL_KEY;
@@ -76,6 +77,16 @@ public class SharedPreferencesUtils {
     public void setLastPodcastTime(int value) {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putInt(LAST_PODCAST_TIME_KEY, value);
+        editor.apply();
+    }
+
+    public int getLastPodcastTotalTime() {
+        return prefs.getInt(LAST_PODCAST_TOTAL_TIME_KEY, -1);
+    }
+
+    public void setLastPodcastTotalTime(int value) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt(LAST_PODCAST_TOTAL_TIME_KEY, value);
         editor.apply();
     }
 }

@@ -6,4 +6,5 @@
     <color name="colorAccent">#DD2027</color>
     <color name="colorBackground">@android:color/background_light</color>
     <color name="textColor">@android:color/primary_text_light</color>
+    <color name="textColorInverted">@android:color/primary_text_dark</color>
 </resources>

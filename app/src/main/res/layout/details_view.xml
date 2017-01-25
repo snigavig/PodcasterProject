@@ -78,7 +78,7 @@
                     android:gravity="start"
                     android:text="@string/default_current_time"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-                    android:textColor="@color/textColor" />
+                    android:textColor="@color/textColorInverted" />
 
                 <android.support.v7.widget.AppCompatTextView
                     android:id="@+id/podcastTotalTimeTextView"
@@ -88,7 +88,7 @@
                     android:gravity="end"
                     android:text="@string/default_total_time"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-                    android:textColor="@color/textColor" />
+                    android:textColor="@color/textColorInverted" />
 
             </LinearLayout>
         </RelativeLayout>

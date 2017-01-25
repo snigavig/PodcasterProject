@@ -64,13 +64,13 @@ public class PlayerService extends Service implements
     private static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
+    public static AtomicBoolean isPaused = new AtomicBoolean(true);
     private final Handler handler = new Handler();
     private int updateCount = 0;
     private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
     private boolean isRestore = false;
-    private AtomicBoolean isPaused = new AtomicBoolean(true);
     private AtomicBoolean isForeground = new AtomicBoolean(true);
     private final Foreground.Listener myListener = new Foreground.Listener() {
         public void onBecameForeground() {
@@ -450,6 +450,7 @@ public class PlayerService extends Service implements
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaFileLengthInMilliseconds = mediaPlayer.getDuration();
+        PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastPodcastTotalTime(mediaFileLengthInMilliseconds);
         if (isRestore) {
             isRestore = false;
             int lastPodcastTime = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcastTime();

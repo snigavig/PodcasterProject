@@ -216,9 +216,9 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
         prepareUIMetrics();
         prepareUI();
         populateUI();
-        if (fabPlayPause.getId() == R.id.play_pause_button &&
-                PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() !=
-                        PlayerService.PAUSED) {
+        if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() !=
+                PlayerService.PAUSED &&
+                PlayerService.isPaused.get()) {
             new MaterialDialog.Builder(this)
                     .title(R.string.restore_confirmation_dialog_title)
                     .content(R.string.restore_confirmation_dialog_content)
@@ -238,6 +238,11 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
                         }
                     })
                     .show();
+        } else {
+            if (!PlayerService.isPaused.get()) {
+                setButtonToPlayState();
+                initPodcastTime(PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcastTotalTime());
+            }
         }
     }
 
@@ -386,13 +391,13 @@ public class MainActivity extends StateUIActivity implements AppCompatSeekBar.On
     private void initPodcastTime(final int millis) {
         if (podcastTime == null) {
             podcastTime = (AppCompatTextView) findViewById(R.id.podcastTotalTimeTextView);
-            podcastTime.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d",
-                    TimeUnit.MILLISECONDS.toHours(millis),
-                    TimeUnit.MILLISECONDS.toMinutes(millis) -
-                            TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)),
-                    TimeUnit.MILLISECONDS.toSeconds(millis) -
-                            TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
         }
+        podcastTime.setText(String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                TimeUnit.MILLISECONDS.toHours(millis),
+                TimeUnit.MILLISECONDS.toMinutes(millis) -
+                        TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)),
+                TimeUnit.MILLISECONDS.toSeconds(millis) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))));
     }
 
     private void initDetailsPanel() {
