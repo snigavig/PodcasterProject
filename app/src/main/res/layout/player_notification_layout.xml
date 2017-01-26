@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/player_notification_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <TextView
+        android:id="@+id/podcastTitleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:lines="2"
+        android:maxLines="2" />
+
+    <ImageView
+        android:id="@+id/previousImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/playPauseImageButton"
+        android:layout_toLeftOf="@+id/playPauseImageButton"
+        android:layout_toStartOf="@+id/playPauseImageButton"
+        android:background="?android:selectableItemBackground"
+        android:padding="12dp"
+        app:srcCompat="@drawable/ic_skip_previous_24dp" />
+
+    <ImageView
+        android:id="@+id/nextImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/playPauseImageButton"
+        android:layout_toEndOf="@+id/playPauseImageButton"
+        android:layout_toRightOf="@+id/playPauseImageButton"
+        android:background="?android:selectableItemBackground"
+        android:padding="12dp"
+        app:srcCompat="@drawable/ic_skip_next_inverted_24dp" />
+
+    <ImageView
+        android:id="@+id/playPauseImageButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@+id/podcastTitleTextView"
+        android:layout_centerHorizontal="true"
+        android:background="?android:selectableItemBackground"
+        app:srcCompat="@drawable/ic_play_arrow_24dp" />
+</RelativeLayout>

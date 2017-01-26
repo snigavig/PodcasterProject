@@ -5,8 +5,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.os.Environment;
 import android.os.Handler;
@@ -16,6 +14,8 @@ import android.support.annotation.IntDef;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.sync.SyncManager;
@@ -50,7 +50,6 @@ public class PlayerService extends Service implements
     public static final String EXTRA_PODCAST_CURRENT_TIME_KEY = "EXTRA_PODCAST_CURRENT_TIME";
     public static final String EXTRA_PODCAST_BUFFERING_VALUE_KEY = "EXTRA_PODCAST_BUFFERING_VALUE";
     private static final String MAIN_ACTION = "PlayerService#ACTION_MAIN";
-    private static final String UPDATE_FOREGROUND_ACTION = "PlayerService#.ACTION_UPDATE_FOREGROUND";
     private static final String START_FOREGROUND_ACTION = "PlayerService#ACTION_START_FOREGROUND";
     private static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
     private static final String START_PLAY_ACTION = "PlayerService#ACTION_START";
@@ -143,22 +142,20 @@ public class PlayerService extends Service implements
         context.startService(podcastPlayerServiceIntent);
     }
 
-    public static void updateForegroundPlayerService(Context context) {
-        Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
-        podcastPlayerServiceIntent.setAction(UPDATE_FOREGROUND_ACTION);
-        context.startService(podcastPlayerServiceIntent);
-    }
-
     private void clearMediaPlayer() {
         if (mediaPlayer != null) {
             if (mediaPlayer.isPlaying() || isPaused.get()) {
                 isPaused.set(false);
-                mediaPlayer.stop();
+                if (mediaPlayer != null) {
+                    mediaPlayer.stop();
+                }
                 PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
+                startForegroundPlayerService(PodcasterProjectApplication.getInstance());
             }
-            mediaPlayer.reset();
+            if (mediaPlayer != null) {
+                mediaPlayer.reset();
+            }
         }
-        mediaPlayer = null;
         releaseWakeLock();
     }
 
@@ -179,9 +176,11 @@ public class PlayerService extends Service implements
                 }
                 dataSource = audioUrl;
             }
-            mediaPlayer.setDataSource(dataSource);
-            mediaPlayer.setOnPreparedListener(this);
-            mediaPlayer.prepareAsync();
+            if (mediaPlayer != null) {
+                mediaPlayer.setDataSource(dataSource);
+                mediaPlayer.setOnPreparedListener(this);
+                mediaPlayer.prepareAsync();
+            }
         } catch (Exception e) {
             Log.e(TAG, e.toString());
         }
@@ -201,13 +200,10 @@ public class PlayerService extends Service implements
     private void handleIntent(Intent intent) {
         switch (intent.getAction()) {
             case START_FOREGROUND_ACTION:
-                startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
+                startForeground(SERVICE_IDS.FOREGROUND_SERVICE, buildNotification());
                 break;
             case STOP_FOREGROUND_ACTION:
-                stopForeground(true);
-                break;
-            case UPDATE_FOREGROUND_ACTION:
-                startForeground(NOTIFICATION_ID.FOREGROUND_SERVICE, buildNotification());
+                stopForeground(false);
                 break;
             case SEEK_ACTION:
                 int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
@@ -222,6 +218,9 @@ public class PlayerService extends Service implements
             case NEXT_ACTION:
                 stopMediaPlayback(this);
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
+                if (activePodcastPrimaryKey == null) {
+                    activePodcastPrimaryKey = intent.getExtras().getString(EXTRA_PODCAST_PRIMARY_KEY_KEY);
+                }
                 Realm realmNext = Realm.getDefaultInstance();
                 Podcast currentPodcastNext = DBUtils.getPodcastByPrimaryKey(realmNext, activePodcastPrimaryKey);
                 Podcast nextPodcast = DBUtils.getNextPodcast(realmNext, currentPodcastNext.getOrder());
@@ -246,8 +245,8 @@ public class PlayerService extends Service implements
                     if (isPaused.get()) {
                         isPaused.set(false);
                         mediaPlayer.start();
-                        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
                         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
+                        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
                         sendPlayBroadcast();
                         sendPlaybackStartedBroadcast();
                         primaryProgressUpdater();
@@ -270,6 +269,7 @@ public class PlayerService extends Service implements
                     mediaPlayer.pause();
                     isPaused.set(true);
                     PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PlayerService.PAUSED);
+                    startForegroundPlayerService(PodcasterProjectApplication.getInstance());
                 }
                 sendSuspendBroadcast();
                 break;
@@ -292,7 +292,7 @@ public class PlayerService extends Service implements
         }
     }
 
-    private void releaseWakeLock() {
+    private synchronized void releaseWakeLock() {
         if (mWakeLock == null) {
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
             mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LOCK_TAG);
@@ -323,59 +323,79 @@ public class PlayerService extends Service implements
     }
 
     private Notification buildNotification() {
-        Bitmap icon = BitmapFactory.decodeResource(getResources(),
-                R.mipmap.ic_launcher);
+        NotificationCompat.Builder playerNotification;
+        String lastPodcastPrimaryKey = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
+        int iconPrevious = R.drawable.ic_skip_previous_inverted_24dp;
+        int iconNext = R.drawable.ic_skip_next_inverted_24dp;
+        int iconPlay = R.drawable.ic_play_arrow_inverted_24dp;
+        int iconPause = R.drawable.ic_pause_inverted_24dp;
+
+        Realm realm = Realm.getDefaultInstance();
+        Podcast currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, lastPodcastPrimaryKey);
+        Podcast previousPodcast = DBUtils.getPreviousPodcast(realm, currentPodcast.getOrder());
+        Podcast nextPodcast = DBUtils.getNextPodcast(realm, currentPodcast.getOrder());
+
+        RemoteViews views = new RemoteViews(getPackageName(),
+                R.layout.player_notification_layout);
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.setAction(MAIN_ACTION);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE, notificationIntent, 0);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                .setContentTitle(getString(R.string.app_name))
-                .setTicker(getString(R.string.app_name))
-                .setContentText(activePodcastName)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setLargeIcon(Bitmap.createScaledBitmap(icon, 128, 128, false))
-                .setContentIntent(pendingIntent);
-
-        builder.setPriority(Notification.PRIORITY_MAX);
-
-        final String lastPodcastPrimaryKey = PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastPodcast();
-
-//        final Cursor cursorPrevious = PodcastsDBHelper.getPodcastsCursorPreviousById(this, lastPodcastId);
-//
-//        if (cursorPrevious.getCount() > 0) {
-//            Intent previousIntent = new Intent();
-//            previousIntent.setAction(ACTION.BROADCAST_PREVIOUS_ACTION);
-//            PendingIntent pendingIntentPrevious = PendingIntent.getBroadcast(this, 12345, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-//            builder.addAction(R.drawable.ic_skip_previous_24dp, "", pendingIntentPrevious);
-//        }
-//        cursorPrevious.close();
-
-        Intent playPauseIntent = new Intent();
-
-        if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PLAYING) {
-            playPauseIntent.setAction(BROADCAST_SUSPEND_ACTION);
-            PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            builder.addAction(R.drawable.ic_pause_24dp, "", pendingIntentPlayPause);
+        if (previousPodcast != null) {
+            Intent previousIntent = new Intent(this, PlayerService.class);
+            previousIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPodcast.getPrimaryKey());
+            previousIntent.setAction(PREVIOUS_ACTION);
+            PendingIntent ppreviousIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.previousImageButton, ppreviousIntent);
+            views.setViewVisibility(R.id.previousImageButton, View.VISIBLE);
         } else {
-            playPauseIntent.setAction(BROADCAST_PLAY_ACTION);
-            PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 12345, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            builder.addAction(R.drawable.ic_play_arrow_24dp, "", pendingIntentPlayPause);
+            views.setViewVisibility(R.id.previousImageButton, View.GONE);
         }
 
-//        final Cursor cursorNext = PodcastsDBHelper.getPodcastsCursorNextById(this, lastPodcastId);
-//
-//        if (cursorNext.getCount() > 0) {
-//            Intent nextIntent = new Intent();
-//            nextIntent.setAction(ACTION.BROADCAST_NEXT_ACTION);
-//            PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 12345, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-//            builder.addAction(R.drawable.ic_skip_next_24dp, "", pendingIntentNext);
-//        }
-//        cursorNext.close();
 
-        return builder.build();
+        if (nextPodcast != null) {
+            Intent nextIntent = new Intent(this, PlayerService.class);
+            nextIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPodcast.getPrimaryKey());
+            nextIntent.setAction(NEXT_ACTION);
+            PendingIntent nextPendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.nextImageButton, nextPendingIntent);
+            views.setViewVisibility(R.id.nextImageButton, View.VISIBLE);
+        } else {
+            views.setViewVisibility(R.id.nextImageButton, View.GONE);
+        }
+
+        if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PAUSED) {
+            Intent playIntent = new Intent(this, PlayerService.class);
+            playIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPodcast.getPrimaryKey());
+            playIntent.putExtra(EXTRA_PODCAST_IS_RESTORE_KEY, false);
+            playIntent.setAction(START_PLAY_ACTION);
+            PendingIntent playPendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE,
+                    playIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.playPauseImageButton, playPendingIntent);
+            views.setImageViewResource(R.id.playPauseImageButton, iconPlay);
+        } else {
+            Intent pauseIntent = new Intent(this, PlayerService.class);
+            pauseIntent.setAction(PAUSE_PLAY_ACTION);
+            PendingIntent pausePendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE,
+                    pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.playPauseImageButton, pausePendingIntent);
+            views.setImageViewResource(R.id.playPauseImageButton, iconPause);
+        }
+
+        views.setImageViewResource(R.id.previousImageButton, iconPrevious);
+        views.setImageViewResource(R.id.nextImageButton, iconNext);
+        views.setTextViewText(R.id.podcastTitleTextView, currentPodcast.getTitle());
+
+        playerNotification = new NotificationCompat.Builder(this);
+        playerNotification.setCustomContentView(views);
+        playerNotification.setOngoing(true);
+        playerNotification.setSmallIcon(R.drawable.launcher);
+        playerNotification.setContentIntent(pendingIntent);
+        realm.close();
+        return playerNotification.build();
     }
 
     @Override
@@ -461,14 +481,15 @@ public class PlayerService extends Service implements
         acquireWakeLock();
         mediaPlayer.start();
         isPaused.set(false);
-        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
         PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().setLastState(PLAYING);
+        startForegroundPlayerService(PodcasterProjectApplication.getInstance());
         sendPlaybackStartedBroadcast();
         primaryProgressUpdater();
     }
 
-    public interface NOTIFICATION_ID {
+    public interface SERVICE_IDS {
         int FOREGROUND_SERVICE = 101;
+        int PENDING_INTENT_REQUEST_CODE = 202;
     }
 
     @Retention(RetentionPolicy.SOURCE)
