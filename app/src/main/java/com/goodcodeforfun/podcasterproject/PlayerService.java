@@ -83,7 +83,6 @@ public class PlayerService extends Service implements
             isForeground.set(false);
         }
     };
-    private String activePodcastName;
     private String activePodcastPrimaryKey;
 
     public static void startMediaPlayback(Context context, String primaryKey, boolean isRestore /*should restore previous state*/) {
@@ -136,10 +135,10 @@ public class PlayerService extends Service implements
         context.startService(podcastPlayerServiceIntent);
     }
 
-    private static void stopForegroundPlayerService(Context context) {
+    private static Intent getStopForegroundPlayerService(Context context) {
         Intent podcastPlayerServiceIntent = new Intent(context, PlayerService.class);
         podcastPlayerServiceIntent.setAction(STOP_FOREGROUND_ACTION);
-        context.startService(podcastPlayerServiceIntent);
+        return podcastPlayerServiceIntent;
     }
 
     private void clearMediaPlayer() {
@@ -203,7 +202,9 @@ public class PlayerService extends Service implements
                 startForeground(SERVICE_IDS.FOREGROUND_SERVICE, buildNotification());
                 break;
             case STOP_FOREGROUND_ACTION:
-                stopForeground(false);
+                clearMediaPlayer();
+                stopForeground(true);
+                stopSelf();
                 break;
             case SEEK_ACTION:
                 int progress = intent.getIntExtra(EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY, -1);
@@ -235,12 +236,12 @@ public class PlayerService extends Service implements
                 Podcast prevPodcast = DBUtils.getPreviousPodcast(realmPrev, currentPodcastPrev.getOrder());
                 startMediaPlayback(this, prevPodcast.getPrimaryKey(), false);
                 realmPrev.close();
+                break;
             case START_PLAY_ACTION:
                 activePodcastPrimaryKey = intent.getStringExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY);
                 isRestore = intent.getBooleanExtra(EXTRA_PODCAST_IS_RESTORE_KEY, false);
                 Realm realm = Realm.getDefaultInstance();
                 Podcast podcast = DBUtils.getPodcastByPrimaryKey(realm, activePodcastPrimaryKey);
-                activePodcastName = podcast.getTitle();
                 if (null != mediaPlayer) {
                     if (isPaused.get()) {
                         isPaused.set(false);
@@ -318,7 +319,6 @@ public class PlayerService extends Service implements
 
     public void onDestroy() {
         super.onDestroy();
-        clearMediaPlayer();
         Foreground.get(this).removeListener(myListener);
     }
 
@@ -329,6 +329,7 @@ public class PlayerService extends Service implements
         int iconNext = R.drawable.ic_skip_next_inverted_24dp;
         int iconPlay = R.drawable.ic_play_arrow_inverted_24dp;
         int iconPause = R.drawable.ic_pause_inverted_24dp;
+        int iconClose = R.drawable.ic_clear_black_24dp;
 
         Realm realm = Realm.getDefaultInstance();
         Podcast currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, lastPodcastPrimaryKey);
@@ -367,6 +368,11 @@ public class PlayerService extends Service implements
             views.setViewVisibility(R.id.nextImageButton, View.GONE);
         }
 
+        playerNotification = new NotificationCompat.Builder(this);
+        playerNotification.setCustomContentView(views);
+        playerNotification.setSmallIcon(R.drawable.launcher);
+        playerNotification.setContentIntent(pendingIntent);
+
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PAUSED) {
             Intent playIntent = new Intent(this, PlayerService.class);
             playIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPodcast.getPrimaryKey());
@@ -376,24 +382,28 @@ public class PlayerService extends Service implements
                     playIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             views.setOnClickPendingIntent(R.id.playPauseImageButton, playPendingIntent);
             views.setImageViewResource(R.id.playPauseImageButton, iconPlay);
+            views.setViewVisibility(R.id.closeImageButton, View.VISIBLE);
+
+            Intent closeIntent = getStopForegroundPlayerService(PodcasterProjectApplication.getInstance());
+            PendingIntent closePendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE,
+                    closeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.closeImageButton, closePendingIntent);
         } else {
+            playerNotification.setOngoing(true);
             Intent pauseIntent = new Intent(this, PlayerService.class);
             pauseIntent.setAction(PAUSE_PLAY_ACTION);
             PendingIntent pausePendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE,
                     pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             views.setOnClickPendingIntent(R.id.playPauseImageButton, pausePendingIntent);
             views.setImageViewResource(R.id.playPauseImageButton, iconPause);
+            views.setViewVisibility(R.id.closeImageButton, View.GONE);
         }
 
         views.setImageViewResource(R.id.previousImageButton, iconPrevious);
         views.setImageViewResource(R.id.nextImageButton, iconNext);
+        views.setImageViewResource(R.id.closeImageButton, iconClose);
         views.setTextViewText(R.id.podcastTitleTextView, currentPodcast.getTitle());
 
-        playerNotification = new NotificationCompat.Builder(this);
-        playerNotification.setCustomContentView(views);
-        playerNotification.setOngoing(true);
-        playerNotification.setSmallIcon(R.drawable.launcher);
-        playerNotification.setContentIntent(pendingIntent);
         realm.close();
         return playerNotification.build();
     }
