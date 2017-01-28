@@ -5,6 +5,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="android:windowBackground">@color/colorPrimary</item>
+        <item name="android:actionOverflowButtonStyle">@style/MainMenuButtonOverflow</item>
     </style>
 
     <style name="AppTheme.Launcher">
@@ -14,5 +15,10 @@
     <style name="PreferenceScreen" parent="AppTheme">
         <item name="android:textColor">@color/textColor</item>
         <item name="android:textColorSecondary">@color/subTextColor</item>
+    </style>
+
+    <style name="MainMenuButtonOverflow" parent="Widget.AppCompat.ActionButton.Overflow">
+        <item name="android:src">@drawable/ic_more_vertical_24dp</item>
+        <item name="android:background">?android:attr/actionBarItemBackground</item>
     </style>
 </resources>

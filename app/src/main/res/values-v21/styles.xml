@@ -8,5 +8,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="android:windowBackground">@color/colorPrimary</item>
+        <item name="android:actionOverflowMenuStyle">@style/MainMenuButtonOverflow</item>
+        <item name="android:actionOverflowButtonStyle">@style/MainMenuButtonOverflow</item>
     </style>
 </resources>
