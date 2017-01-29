@@ -330,6 +330,7 @@ public class PlayerService extends Service implements
         int iconPlay = R.drawable.ic_play_arrow_inverted_24dp;
         int iconPause = R.drawable.ic_pause_inverted_24dp;
         int iconClose = R.drawable.ic_clear_black_24dp;
+        int iconBig = R.mipmap.ic_launcher;
 
         Realm realm = Realm.getDefaultInstance();
         Podcast currentPodcast = DBUtils.getPodcastByPrimaryKey(realm, lastPodcastPrimaryKey);
@@ -369,8 +370,8 @@ public class PlayerService extends Service implements
         }
 
         playerNotification = new NotificationCompat.Builder(this);
-        playerNotification.setCustomContentView(views);
-        playerNotification.setSmallIcon(R.drawable.launcher);
+        playerNotification.setCustomBigContentView(views);
+        playerNotification.setSmallIcon(R.drawable.ic_notification);
         playerNotification.setContentIntent(pendingIntent);
 
         if (PodcasterProjectApplication.getInstance().getSharedPreferencesUtils().getLastState() == PAUSED) {
@@ -402,6 +403,7 @@ public class PlayerService extends Service implements
         views.setImageViewResource(R.id.previousImageButton, iconPrevious);
         views.setImageViewResource(R.id.nextImageButton, iconNext);
         views.setImageViewResource(R.id.closeImageButton, iconClose);
+        views.setImageViewResource(R.id.podcastAppIconImageView, iconBig);
         views.setTextViewText(R.id.podcastTitleTextView, currentPodcast.getTitle());
 
         realm.close();

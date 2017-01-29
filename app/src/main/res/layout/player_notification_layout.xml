@@ -1,39 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/player_notification_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:minHeight="96dp"
     android:padding="10dp">
 
+    <ImageView
+        android:id="@+id/podcastAppIconImageView"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:srcCompat="@mipmap/ic_launcher" />
+
     <TextView
-        android:id="@+id/podcastTitleTextView"
+        android:id="@+id/podcastAppNameTextView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:lines="2"
-        android:maxLines="2" />
+        android:layout_height="24dp"
+        android:layout_toEndOf="@+id/podcastAppIconImageView"
+        android:layout_toRightOf="@+id/podcastAppIconImageView"
+        android:text="@string/app_name"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small" />
 
     <ImageView
         android:id="@+id/previousImageButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_alignTop="@+id/playPauseImageButton"
         android:layout_toLeftOf="@+id/playPauseImageButton"
         android:layout_toStartOf="@+id/playPauseImageButton"
         android:background="?android:selectableItemBackground"
-        android:padding="12dp"
+        android:padding="6dp"
         app:srcCompat="@drawable/ic_skip_previous_24dp" />
 
     <ImageView
         android:id="@+id/nextImageButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_alignTop="@+id/playPauseImageButton"
         android:layout_toEndOf="@+id/playPauseImageButton"
         android:layout_toRightOf="@+id/playPauseImageButton"
         android:background="?android:selectableItemBackground"
-        android:padding="12dp"
+        android:padding="6dp"
         app:srcCompat="@drawable/ic_skip_next_inverted_24dp" />
 
     <ImageView
@@ -54,4 +63,15 @@
         android:layout_alignParentTop="true"
         android:background="?android:selectableItemBackground"
         app:srcCompat="@drawable/ic_clear_black_24dp" />
+
+    <TextView
+        android:id="@+id/podcastTitleTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/podcastAppNameTextView"
+        android:layout_toEndOf="@+id/podcastAppIconImageView"
+        android:layout_toRightOf="@+id/podcastAppIconImageView"
+        android:maxLines="2"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        tools:text="Podcast title" />
 </RelativeLayout>
