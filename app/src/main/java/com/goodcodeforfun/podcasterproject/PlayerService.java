@@ -49,6 +49,7 @@ public class PlayerService extends Service implements
     public static final String EXTRA_ACTIVE_PODCAST_PRIMARY_KEY_KEY = "EXTRA_ACTIVE_PODCAST_PRIMARY_KEY";
     public static final String EXTRA_PODCAST_CURRENT_TIME_KEY = "EXTRA_PODCAST_CURRENT_TIME";
     public static final String EXTRA_PODCAST_BUFFERING_VALUE_KEY = "EXTRA_PODCAST_BUFFERING_VALUE";
+    public static final AtomicBoolean isPaused = new AtomicBoolean(true);
     private static final String MAIN_ACTION = "PlayerService#ACTION_MAIN";
     private static final String START_FOREGROUND_ACTION = "PlayerService#ACTION_START_FOREGROUND";
     private static final String STOP_FOREGROUND_ACTION = "PlayerService#ACTION_STOP_FOREGROUND";
@@ -63,14 +64,12 @@ public class PlayerService extends Service implements
     private static final String EXTRA_PODCAST_SEEK_PROGRESS_VALUE_KEY = "EXTRA_PODCAST_SEEK_PROGRESS_VALUE";
     private static final String TAG = PlayerService.class.getSimpleName();
     private static final String LOCK_TAG = TAG + ".lock";
-    public static AtomicBoolean isPaused = new AtomicBoolean(true);
     private final Handler handler = new Handler();
+    private final AtomicBoolean isForeground = new AtomicBoolean(true);
     private int updateCount = 0;
     private int mediaFileLengthInMilliseconds = -1;
     private PowerManager.WakeLock mWakeLock;
     private MediaPlayer mediaPlayer;
-    private boolean isRestore = false;
-    private AtomicBoolean isForeground = new AtomicBoolean(true);
     private final Foreground.Listener myListener = new Foreground.Listener() {
         public void onBecameForeground() {
             isForeground.set(true);
@@ -83,6 +82,7 @@ public class PlayerService extends Service implements
             isForeground.set(false);
         }
     };
+    private boolean isRestore = false;
     private String activePodcastPrimaryKey;
 
     public static void startMediaPlayback(Context context, String primaryKey, boolean isRestore /*should restore previous state*/) {
@@ -350,8 +350,8 @@ public class PlayerService extends Service implements
             Intent previousIntent = new Intent(this, PlayerService.class);
             previousIntent.putExtra(EXTRA_PODCAST_PRIMARY_KEY_KEY, currentPodcast.getPrimaryKey());
             previousIntent.setAction(PREVIOUS_ACTION);
-            PendingIntent ppreviousIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            views.setOnClickPendingIntent(R.id.previousImageButton, ppreviousIntent);
+            PendingIntent previousPendingIntent = PendingIntent.getService(this, SERVICE_IDS.PENDING_INTENT_REQUEST_CODE, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.previousImageButton, previousPendingIntent);
             views.setViewVisibility(R.id.previousImageButton, View.VISIBLE);
         } else {
             views.setViewVisibility(R.id.previousImageButton, View.GONE);
