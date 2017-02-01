@@ -19,7 +19,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
 import com.bumptech.glide.Glide;
-import com.f2prateek.progressbutton.ProgressButton;
+import com.dd.CircularProgressButton;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
@@ -38,10 +38,10 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_ITEM = 1;
     private final WeakReference<MainActivity> mActivityWeakReference;
     private ArrayList<Podcast> podcastArrayList;
-    private LongSparseArray<ProgressButton> downloadingProgressButtons = new LongSparseArray<>();
+    private LongSparseArray<CircularProgressButton> downloadingProgressButtons = new LongSparseArray<>();
     private LongSparseArray<Timer> downloadingProgressTimers = new LongSparseArray<>();
     private String downloadPodcastUrl;
-    private ProgressButton currentProgressButton;
+    private CircularProgressButton currentProgressButton;
     private DownloadManager manager = null;
 
     PodcastListAdapter(MainActivity activity, ArrayList<Podcast> podcastArrayList) {
@@ -108,9 +108,9 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(getItem(position).getAudioUrl()));
             if (podcast.isDownloaded() || podcast.isDownloadInitiated() || file.isFile()) {
-                viewHolder.downloadButton.setPinned(true);
+                //viewHolder.downloadButton.setPinned(true);
             } else {
-                viewHolder.downloadButton.setPinned(false);
+                //viewHolder.downloadButton.setPinned(false);
             }
             viewHolder.downloadButton.setProgress(0);
             if (podcast.isDownloadInitiated() && !podcast.isDownloaded()) {
@@ -132,7 +132,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 @Override
                 public void onClick(View view) {
                     downloadPodcastUrl = podcast.getAudioUrl();
-                    currentProgressButton = (ProgressButton) view;
+                    currentProgressButton = (CircularProgressButton) view;
                     if (ContextCompat.checkSelfPermission(activity,
                             Manifest.permission.WRITE_EXTERNAL_STORAGE)
                             != PackageManager.PERMISSION_GRANTED ||
@@ -277,13 +277,13 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private final AppCompatTextView podcastTitleTextView;
         private final AppCompatImageView podcastImageView;
         private final RelativeLayout cardWrap;
-        private final ProgressButton downloadButton;
+        private final CircularProgressButton downloadButton;
 
         PodcastItemViewHolder(View view) {
             super(view);
             podcastTitleTextView = (AppCompatTextView) view.findViewById(R.id.tv_title);
             podcastImageView = (AppCompatImageView) view.findViewById(R.id.podcastImageView);
-            downloadButton = (ProgressButton) view.findViewById(R.id.downloadButton);
+            downloadButton = (CircularProgressButton) view.findViewById(R.id.downloadButton);
             cardWrap = (RelativeLayout) view.findViewById(R.id.cv_wrap);
         }
     }

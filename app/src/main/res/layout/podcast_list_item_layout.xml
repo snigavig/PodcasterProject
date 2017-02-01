@@ -39,7 +39,7 @@
         android:textColor="@color/textColor"
         tools:ignore="RtlSymmetry" />
 
-    <com.f2prateek.progressbutton.ProgressButton
+    <com.dd.CircularProgressButton
         android:id="@id/downloadButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
@@ -49,7 +49,5 @@
         android:layout_margin="5dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:gravity="center"
-        android:padding="5dp"
-        app:pinnedDrawable="@drawable/ic_pinned_with_padding"
-        app:unpinnedDrawable="@drawable/ic_unpinned_with_padding" />
+        android:padding="5dp" />
 </RelativeLayout>
