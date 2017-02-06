@@ -26,9 +26,9 @@
         android:layout_height="match_parent"
         android:layout_centerVertical="true"
         android:layout_toEndOf="@id/podcastImageView"
-        android:layout_toLeftOf="@+id/downloadButton"
+        android:layout_toLeftOf="@+id/downloadButtonWrap"
         android:layout_toRightOf="@id/podcastImageView"
-        android:layout_toStartOf="@+id/downloadButton"
+        android:layout_toStartOf="@+id/downloadButtonWrap"
         android:ellipsize="end"
         android:gravity="center_vertical"
         android:lines="3"
@@ -39,15 +39,36 @@
         android:textColor="@color/textColor"
         tools:ignore="RtlSymmetry" />
 
-    <com.dd.CircularProgressButton
-        android:id="@id/downloadButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+    <FrameLayout
+        android:id="@+id/downloadButtonWrap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
-        android:layout_margin="5dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:gravity="center"
-        android:padding="5dp" />
+        android:background="?attr/selectableItemBackgroundBorderless">
+
+        <io.netopen.hotbitmapgg.library.view.RingProgressBar
+            android:id="@+id/downloadButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="6dp"
+            android:clickable="true"
+            android:gravity="center"
+            app:max="100"
+            app:ringColor="@color/colorAccent"
+            app:ringProgressColor="@color/colorAccent"
+            app:ringWidth="4dp"
+            app:style="FILL">
+
+        </io.netopen.hotbitmapgg.library.view.RingProgressBar>
+
+        <ImageView
+            android:id="@+id/downloadButtonImage"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:layout_margin="2dp"
+            app:srcCompat="@drawable/ic_download_24dp" />
+    </FrameLayout>
 </RelativeLayout>

@@ -17,7 +17,7 @@
 #}
 
 # Realm
- -keep class com.goodcodeforfun.podcasterproject.model.** { *; }
+-keep class com.goodcodeforfun.podcasterproject.model.** { *; }
 -keep class io.realm.annotations.RealmModule
 -keep @io.realm.annotations.RealmModule class *
 -keep class io.realm.internal.Keep
@@ -65,6 +65,9 @@
 -keep interface okhttp3.** { *; }
 -dontwarn okhttp3.**
 -dontwarn okio.**
+
+# keep ProgressButton
+-keep class com.f2prateek.progressbutton.ProgressButton
 
 # support-v4
 -dontwarn android.support.**

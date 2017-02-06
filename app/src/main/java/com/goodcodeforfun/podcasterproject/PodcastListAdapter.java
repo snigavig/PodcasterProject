@@ -16,10 +16,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.bumptech.glide.Glide;
-import com.dd.CircularProgressButton;
 import com.goodcodeforfun.podcasterproject.model.Podcast;
 import com.goodcodeforfun.podcasterproject.util.DBUtils;
 import com.goodcodeforfun.podcasterproject.util.StorageUtils;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import io.netopen.hotbitmapgg.library.view.RingProgressBar;
 import io.realm.Realm;
 
 class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -38,10 +40,10 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_ITEM = 1;
     private final WeakReference<MainActivity> mActivityWeakReference;
     private ArrayList<Podcast> podcastArrayList;
-    private LongSparseArray<CircularProgressButton> downloadingProgressButtons = new LongSparseArray<>();
+    private LongSparseArray<RingProgressBar> downloadingProgressButtons = new LongSparseArray<>();
     private LongSparseArray<Timer> downloadingProgressTimers = new LongSparseArray<>();
     private String downloadPodcastUrl;
-    private CircularProgressButton currentProgressButton;
+    private RingProgressBar currentProgressButton;
     private DownloadManager manager = null;
 
     PodcastListAdapter(MainActivity activity, ArrayList<Podcast> podcastArrayList) {
@@ -108,14 +110,15 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PODCASTS) + "/" + StorageUtils.getFileNameFromUrl(getItem(position).getAudioUrl()));
             if (podcast.isDownloaded() || podcast.isDownloadInitiated() || file.isFile()) {
-                //viewHolder.downloadButton.setPinned(true);
+                viewHolder.downloadButtonImage.setImageResource(R.drawable.ic_check_24dp);
+                viewHolder.downloadButton.setProgress(100);
             } else {
-                //viewHolder.downloadButton.setPinned(false);
+                viewHolder.downloadButtonImage.setImageResource(R.drawable.ic_download_24dp);
+                viewHolder.downloadButton.setProgress(0);
             }
-            viewHolder.downloadButton.setProgress(0);
             if (podcast.isDownloadInitiated() && !podcast.isDownloaded()) {
                 int progress = podcast.getDownloadProgress();
-                if (progress != -1) {
+                if (progress != -1 && progress > 3) {
                     viewHolder.downloadButton.setProgress(progress);
                     downloadingProgressButtons.append(podcast.getDownloadId(), viewHolder.downloadButton);
                     startDownloadTimerTask(podcast.getDownloadId());
@@ -123,7 +126,7 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 viewHolder.downloadButton.setEnabled(false);
                 viewHolder.downloadButton.setClickable(false);
             } else {
-                viewHolder.downloadButton.setProgress(0);
+                //viewHolder.downloadButton.setProgress(0);
                 viewHolder.downloadButton.setEnabled(true);
                 viewHolder.downloadButton.setClickable(true);
             }
@@ -132,7 +135,9 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 @Override
                 public void onClick(View view) {
                     downloadPodcastUrl = podcast.getAudioUrl();
-                    currentProgressButton = (CircularProgressButton) view;
+                    currentProgressButton = (RingProgressBar) view;
+                    currentProgressButton.setProgress(3);
+                    ((ImageView) ((FrameLayout) view.getParent()).findViewById(R.id.downloadButtonImage)).setImageResource(R.drawable.ic_check_24dp);
                     if (ContextCompat.checkSelfPermission(activity,
                             Manifest.permission.WRITE_EXTERNAL_STORAGE)
                             != PackageManager.PERMISSION_GRANTED ||
@@ -193,7 +198,6 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     realm.copyToRealmOrUpdate(podcast);
                 }
             });
-            realm.close();
             setDownloadProgress(activity, downloadId, downloadProgressValue);
         }
         cursor.close();
@@ -205,7 +209,9 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 @Override
                 public void run() {
                     if (downloadingProgressButtons.get(downloadId) != null) {
-                        downloadingProgressButtons.get(downloadId).setProgress(downloadProgressValue);
+                        if (downloadProgressValue != -1 && downloadProgressValue > 3) {
+                            downloadingProgressButtons.get(downloadId).setProgress(downloadProgressValue);
+                        }
                     }
                 }
             });
@@ -277,14 +283,18 @@ class PodcastListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private final AppCompatTextView podcastTitleTextView;
         private final AppCompatImageView podcastImageView;
         private final RelativeLayout cardWrap;
-        private final CircularProgressButton downloadButton;
+        private final RingProgressBar downloadButton;
+        private final ImageView downloadButtonImage;
+        private final FrameLayout downloadButtonWrap;
 
         PodcastItemViewHolder(View view) {
             super(view);
             podcastTitleTextView = (AppCompatTextView) view.findViewById(R.id.tv_title);
             podcastImageView = (AppCompatImageView) view.findViewById(R.id.podcastImageView);
-            downloadButton = (CircularProgressButton) view.findViewById(R.id.downloadButton);
+            downloadButton = (RingProgressBar) view.findViewById(R.id.downloadButton);
             cardWrap = (RelativeLayout) view.findViewById(R.id.cv_wrap);
+            downloadButtonImage = (ImageView) view.findViewById(R.id.downloadButtonImage);
+            downloadButtonWrap = (FrameLayout) view.findViewById(R.id.downloadButtonWrap);
         }
     }
 
